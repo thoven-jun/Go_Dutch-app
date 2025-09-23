@@ -46,7 +46,7 @@ function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplic
 }
 
 function AppContent() {
-  const API_BASE_URL = (process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}` : 'http://localhost:3001');
+  const apiBaseUrl = (process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}` : 'http://localhost:3001');
 
   const [projects, setProjects] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -96,7 +96,7 @@ function AppContent() {
       .then(res => res.json())
       .then(data => setProjects(data))
       .catch(error => console.error("Error fetching projects:", error));
-  }, []);
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     fetchProjects();
