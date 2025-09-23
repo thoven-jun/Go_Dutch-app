@@ -91,7 +91,7 @@ function AppContent() {
   const closeCreateProjectModal = () => setIsCreateProjectModalOpen(false);  
 
   const fetchProjects = useCallback(() => {
-    fetch(`${API_BASE_URL}/projects`)
+    fetch(`${apiBaseUrl}/projects`)
       .then(res => res.json())
       .then(data => setProjects(data))
       .catch(error => console.error("Error fetching projects:", error));
@@ -103,7 +103,7 @@ function AppContent() {
 
   const handleCreateProject = (projectName, participantNames) => {
     let newProjectData;
-    fetch(`${API_BASE_URL}/projects`, {
+    fetch(`${apiBaseUrl}/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: projectName, participants: [], expenses: [] })
@@ -113,7 +113,7 @@ function AppContent() {
       newProjectData = newProject;
       if (participantNames && participantNames.length > 0) {
         const addParticipantPromises = participantNames.map(name => {
-          return fetch(`${API_BASE_URL}/projects/${newProject.id}/participants`, {
+          return fetch(`${apiBaseUrl}/projects/${newProject.id}/participants`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: name })
@@ -132,7 +132,7 @@ function AppContent() {
   };
 
   const handleUpdateProject = (projectId, newName) => {
-    fetch(`${API_BASE_URL}/projects/${projectId}`, {
+    fetch(`${apiBaseUrl}/projects/${projectId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName })
@@ -144,7 +144,7 @@ function AppContent() {
 
   const handleDeleteProject = (projectId) => {
     showAlert('프로젝트 삭제', '정말 이 프로젝트를 삭제하시겠습니까?\n관련된 모든 참여자와 지출 내역이 함께 삭제됩니다.', () => {
-      fetch(`${API_BASE_URL}/projects/${projectId}`, {
+      fetch(`${apiBaseUrl}/projects/${projectId}`, {
         method: 'DELETE',
       }).then(res => {
         if (res.ok) {
@@ -176,7 +176,7 @@ function AppContent() {
     const updatePromises = duplicates.map(p => {
       const newName = updatedNames[p.id];
       if (p.name !== newName) {
-        return fetch(`${API_BASE_URL}/participants/${p.id}`, {
+        return fetch(`${apiBaseUrl}/participants/${p.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newName }),
@@ -187,13 +187,13 @@ function AppContent() {
 
     let finalPromise;
     if (editingParticipantId) {
-      finalPromise = fetch(`${API_BASE_URL}/participants/${editingParticipantId}`, {
+      finalPromise = fetch(`${apiBaseUrl}/participants/${editingParticipantId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedNames['new'] }),
       });
     } else {
-      finalPromise = fetch(`${API_BASE_URL}/projects/${projectId}/participants`, {
+      finalPromise = fetch(`${apiBaseUrl}/projects/${projectId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedNames['new'] }),
@@ -255,7 +255,7 @@ function AppContent() {
                       isParticipantsExpanded={isParticipantsExpanded}
                       onToggleParticipants={toggleParticipantsList}
                       openEditExpenseModal={openEditExpenseModal}
-                      apiBaseUrl={API_BASE_URL}
+                      apiBaseUrl={apiBaseUrl}
                     />} 
                   />
                   <Route
@@ -266,12 +266,12 @@ function AppContent() {
                       showAlert={showAlert}
                       onOpenDuplicateModal={handleOpenDuplicateModal}
                       closeAlert={closeAlert}
-                      apiBaseUrl={API_BASE_URL} // ✨ 추가
+                      apiBaseUrl={apiBaseUrl} // ✨ 추가
                     />}
                   />
                   <Route 
                     path="/project/:projectId/settlement" 
-                    element={<SettlementResultView apiBaseUrl={API_BASE_URL} />} // ✨ 추가
+                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} />} // ✨ 추가
                   />
                 </Routes>
           </div>
@@ -304,7 +304,7 @@ function AppContent() {
         onClose={closeAddExpenseModal}
         project={addExpenseModalInfo.project}
         onUpdate={fetchProjects}
-        apiBaseUrl={API_BASE_URL}
+        apiBaseUrl={apiBaseUrl}
       />
       
       {/* 4. 'onSave' prop에 위에서 정의한 'handleUpdateExpense' 함수를 정확히 연결합니다. */}
@@ -314,7 +314,7 @@ function AppContent() {
         onClose={closeEditExpenseModal}
         project={editExpenseModalInfo.project}
         expense={editExpenseModalInfo.expense}
-        onSave={(...args) => handleUpdateExpense(...args, API_BASE_URL)}
+        onSave={(...args) => handleUpdateExpense(...args, apiBaseUrl)}
       />
 
       <CreateProjectModal
