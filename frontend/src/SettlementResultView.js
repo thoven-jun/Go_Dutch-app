@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './SettlementResultView.css';
 
-function SettlementResultView() {
+function SettlementResultView({ apiBaseUrl }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const { projectId } = useParams();
 
   useEffect(() => {
     // API 주소에서 '/api' 제거
-    fetch(`http://localhost:3001/projects/${projectId}/settlement`)
+    fetch(`${apiBaseUrl}/projects/${projectId}/settlement`)
       .then(res => {
         if (!res.ok) {
           throw new Error('정산 데이터를 불러오는 데 실패했습니다.');
@@ -21,7 +21,7 @@ function SettlementResultView() {
         console.error(err);
         setError('정산 결과를 계산하는 중 오류가 발생했습니다.');
       });
-  }, [projectId]);
+  }, [projectId, apiBaseUrl]);
 
   if (error) {
     return <div className="settlement-container">{error}</div>;

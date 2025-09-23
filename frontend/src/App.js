@@ -14,7 +14,7 @@ import ParticipantManager from './ParticipantManager';
 import './App.css';
 
 // ProjectDetailView Wrapper
-function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, isParticipantsExpanded, onToggleParticipants, openEditExpenseModal }) {
+function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, isParticipantsExpanded, onToggleParticipants, openEditExpenseModal, apiBaseUrl }) {
   const { projectId } = useParams();
   const list = Array.isArray(projects) ? projects : Object.values(projects || {});
   const project = list.find(p => p.id === parseInt(projectId));
@@ -29,6 +29,7 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAl
     isParticipantsExpanded={isParticipantsExpanded}
     onToggleParticipants={onToggleParticipants}
     openEditExpenseModal={openEditExpenseModal}
+    apiBaseUrl={apiBaseUrl}
   />;
 }
 
@@ -44,7 +45,7 @@ function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplic
 }
 
 function AppContent() {
-  const API_BASE_URL = (process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : 'http://localhost:3001');
+  const API_BASE_URL = (process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}` : 'http://localhost:3001');
 
   const [projects, setProjects] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -102,7 +103,7 @@ function AppContent() {
 
   const handleCreateProject = (projectName, participantNames) => {
     let newProjectData;
-    fetch('${API_BASE_URL}/projects', {
+    fetch(`${API_BASE_URL}/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: projectName, participants: [], expenses: [] })
@@ -212,8 +213,8 @@ function AppContent() {
 
   // 1. 지출 항목 업데이트를 처리하는 함수입니다.
   // 이 함수는 서버에 수정된 데이터를 보내고, 성공하면 전체 프로젝트 목록을 다시 불러온 뒤 모달을 닫습니다.
-  const handleUpdateExpense = (expenseId, updatedData) => {
-    fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+  const handleUpdateExpense = (expenseId, updatedData, apiBaseUrl) => {
+    fetch(`${apiBaseUrl}/expenses/${expenseId}`, { // ✨ 수정
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)
@@ -254,6 +255,7 @@ function AppContent() {
                       isParticipantsExpanded={isParticipantsExpanded}
                       onToggleParticipants={toggleParticipantsList}
                       openEditExpenseModal={openEditExpenseModal}
+                      apiBaseUrl={API_BASE_URL}
                     />} 
                   />
                   <Route
@@ -264,10 +266,14 @@ function AppContent() {
                       showAlert={showAlert}
                       onOpenDuplicateModal={handleOpenDuplicateModal}
                       closeAlert={closeAlert}
+                      apiBaseUrl={API_BASE_URL} // ✨ 추가
                     />}
                   />
-                  <Route path="/project/:projectId/settlement" element={<SettlementResultView />} />
-              </Routes>
+                  <Route 
+                    path="/project/:projectId/settlement" 
+                    element={<SettlementResultView apiBaseUrl={API_BASE_URL} />} // ✨ 추가
+                  />
+                </Routes>
           </div>
         </main>
       </div>
@@ -298,6 +304,7 @@ function AppContent() {
         onClose={closeAddExpenseModal}
         project={addExpenseModalInfo.project}
         onUpdate={fetchProjects}
+        apiBaseUrl={API_BASE_URL}
       />
       
       {/* 4. 'onSave' prop에 위에서 정의한 'handleUpdateExpense' 함수를 정확히 연결합니다. */}
@@ -307,7 +314,7 @@ function AppContent() {
         onClose={closeEditExpenseModal}
         project={editExpenseModalInfo.project}
         expense={editExpenseModalInfo.expense}
-        onSave={handleUpdateExpense}
+        onSave={(...args) => handleUpdateExpense(...args, API_BASE_URL)}
       />
 
       <CreateProjectModal

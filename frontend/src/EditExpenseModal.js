@@ -81,7 +81,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
 
   useEffect(() => {
     if (isOpen && expense) {
-      fetch('http://localhost:3001/categories').then(res => res.json()).then(data => setCategories(data));
+      fetch('${apiBaseUrl}/categories').then(res => res.json()).then(data => setCategories(data));
       setDesc(expense.desc);
       setAmount(formatNumber(expense.amount));
       setPayerId(expense.payer_id || ''); 

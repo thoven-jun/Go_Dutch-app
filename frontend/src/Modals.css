@@ -259,3 +259,46 @@
 .split-detail-row .lock-button.locked:hover {
   background-color: var(--accent-color-light); /* 잠겼을 때 호버 배경색 */
 }
+
+/* --- 분담 참여자 선택 UI 스타일 --- */
+.split-participants-section {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 10px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+}
+.split-participants-section h4 {
+  margin: 0 0 15px 0;
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+.participant-checkbox-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.participant-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.participant-checkbox:hover {
+  background-color: #f8f9fa;
+}
+.participant-checkbox input {
+  width: auto;
+  height: auto;
+}
+.participant-checkbox input:checked + span {
+  font-weight: 600;
+  color: var(--primary-color);
+}

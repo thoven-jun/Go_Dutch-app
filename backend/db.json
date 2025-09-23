@@ -14,65 +14,18 @@
       ],
       "expenses": [
         {
-          "desc": "테스트",
+          "desc": "테스트 01",
           "amount": 10000,
           "payer_id": 2,
           "split_method": "equally",
           "split_details": {},
-          "id": 4,
-          "category_id": 1
+          "category_id": 1,
+          "locked_participant_ids": [],
+          "penny_rounding_target_id": null,
+          "id": 4
         }
       ],
       "id": 1
-    },
-    {
-      "name": "테스트 02",
-      "participants": [
-        {
-          "id": 9,
-          "name": "B"
-        },
-        {
-          "id": 14,
-          "name": "C"
-        },
-        {
-          "id": 15,
-          "name": "A"
-        }
-      ],
-      "expenses": [
-        {
-          "desc": "미결제자 삭제 테스트 02",
-          "amount": 10000,
-          "payer_id": 9,
-          "split_method": "equally",
-          "split_details": {
-            "9": 50,
-            "14": 50
-          },
-          "category_id": 1,
-          "locked_participant_ids": [],
-          "id": 14,
-          "penny_rounding_target_id": 9
-        }
-      ],
-      "id": 2
-    },
-    {
-      "name": "테스트",
-      "participants": [
-        {
-          "id": 16,
-          "name": "A"
-        },
-        {
-          "id": 17,
-          "name": "B"
-        }
-      ],
-      "expenses": [],
-      "id": 3
     }
   ],
   "categories": [

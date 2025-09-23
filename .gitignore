@@ -19,3 +19,5 @@ yarn-error.log*
 # 폴더 이름 뒤에 /를 붙이면, 파일이 아닌 폴더 전체를 무시하라는 의미가 됨.
 [제미나이용] backend/
 삭제 예정 파일/
+\[제미나이용] backend/db.json
+\[제미나이용] backend/server.js

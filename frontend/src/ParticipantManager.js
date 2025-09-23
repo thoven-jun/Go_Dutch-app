@@ -5,7 +5,7 @@ import './ParticipantManager.css';
 const DeleteIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> );
 const EditIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> );
 
-function ParticipantManager({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert }) {
+function ParticipantManager({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert, apiBaseUrl }) {
   const { projectId } = useParams();
   const project = projects.find(p => p.id === parseInt(projectId));
   
@@ -28,7 +28,7 @@ function ParticipantManager({ projects, onUpdate, showAlert, onOpenDuplicateModa
       onOpenDuplicateModal(duplicates, newParticipant.trim(), projectId);
       setNewParticipant('');
     } else {
-      fetch(`http://localhost:3001/projects/${projectId}/participants`, {
+      fetch(`${apiBaseUrl}/projects/${projectId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newParticipant.trim() })
@@ -49,7 +49,7 @@ const message = isPayer
       : `'${participant.name}'님을 삭제하면, 금액 및 비율 지정 방식의 지출 항목은 '균등 부담' 방식으로 모두 조정됩니다.이 작업은 되돌릴 수 없습니다.계속하시겠습니까?`;
       
     showAlert(title, message, () => {
-      fetch(`http://localhost:3001/participants/${participant.id}`, { method: 'DELETE' })
+      fetch(`${apiBaseUrl}/participants/${participant.id}`, { method: 'DELETE' })
       .then(res => {
         if (res.ok) {
           onUpdate();
@@ -94,7 +94,7 @@ const message = isPayer
     }
 
     // 동명이인이 없으면 바로 저장
-    fetch(`http://localhost:3001/participants/${editing.id}`, {
+    fetch(`${apiBaseUrl}/participants/${editing.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newName }),

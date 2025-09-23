@@ -21,7 +21,7 @@ function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddEx
   
   const handleDeleteExpense = (expenseId) => {
     showAlert('지출 내역 삭제', '정말 이 지출 내역을 삭제하시겠습니까?', () => {
-      fetch(`http://localhost:3001/expenses/${expenseId}`, { method: 'DELETE' })
+      fetch(`${apiBaseUrl}/expenses/${expenseId}`, { method: 'DELETE' })
         .then(res => {
           if (!res.ok) throw new Error('Server response was not ok');
           onUpdate();

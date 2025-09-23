@@ -117,8 +117,17 @@ server.get('/projects/:projectId/settlement', (req, res) => {
     participants.forEach(p => { totalOwedBy[p.id] = 0; });
 
     expenses.forEach(expense => {
-        const { amount, split_method = 'equally', split_details = {}, penny_rounding_target_id } = expense;
-        const involvedParticipants = participants.filter(p => split_method === 'equally' || (split_details[p.id] && Number(split_details[p.id]) > 0));
+        // ✨ 1. expense 객체에서 split_participants 속성을 가져옵니다.
+        const { amount, split_method = 'equally', split_details = {}, penny_rounding_target_id, split_participants } = expense;
+
+        // ✨ 2. 비용 분담에 참여할 사람 목록을 결정합니다.
+        //    - split_participants가 있으면 그 목록을 사용하고,
+        //    - 없으면 기존처럼 프로젝트 전체 참여자를 대상으로 합니다.
+        const involvedParticipantIds = (split_participants && split_participants.length > 0)
+            ? split_participants
+            : participants.map(p => p.id);
+        
+        const involvedParticipants = participants.filter(p => involvedParticipantIds.includes(p.id));
 
         if (involvedParticipants.length === 0) return;
 
@@ -137,14 +146,16 @@ server.get('/projects/:projectId/settlement', (req, res) => {
                 });
                 totalOwedBy[targetId] += amount - totalRoundedDown;
             } else {
-                // 기능 미사용 시: 기존의 1/N 계산
+                // ✨ 수정된 'involvedParticipants' 목록을 사용하여 1/N 계산을 수행합니다.
                 const perPerson = amount / involvedParticipants.length;
                 involvedParticipants.forEach(p => { totalOwedBy[p.id] += perPerson; });
             }
         } else if (split_method === 'amount') {
             involvedParticipants.forEach(p => { totalOwedBy[p.id] += Number(split_details[p.id] || 0); });
+            const amountParticipants = participants.filter(p => split_details[p.id] && Number(split_details[p.id]) > 0);
+            amountParticipants.forEach(p => { totalOwedBy[p.id] += Number(split_details[p.id] || 0); });
         } else if (split_method === 'percentage') {
-             // 정수 기반 비율 계산
+            const percentageParticipants = participants.filter(p => split_details[p.id] && Number(split_details[p.id]) > 0);
             let totalCalculated = 0;
             const sortedParticipants = involvedParticipants.sort((a,b) => a.id - b.id); // 계산 일관성을 위한 정렬
             sortedParticipants.forEach(p => {
