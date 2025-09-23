@@ -17,8 +17,7 @@ const EditIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="n
 
 
 // ✨ openEditExpenseModal prop 추가
-function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddExpenseModal, isParticipantsExpanded, onToggleParticipants, openEditExpenseModal }) { 
-  
+function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddExpenseModal, isParticipantsExpanded, onToggleParticipants, openEditExpenseModal, apiBaseUrl }) {   
   const handleDeleteExpense = (expenseId) => {
     showAlert('지출 내역 삭제', '정말 이 지출 내역을 삭제하시겠습니까?', () => {
       fetch(`${apiBaseUrl}/expenses/${expenseId}`, { method: 'DELETE' })

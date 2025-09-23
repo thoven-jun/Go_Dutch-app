@@ -34,13 +34,14 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAl
 }
 
 // ParticipantManager Wrapper
-function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert }) {
+function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert, apiBaseUrl }) {
   return <ParticipantManager 
     projects={projects} 
     onUpdate={onUpdate} 
     showAlert={showAlert} 
     onOpenDuplicateModal={onOpenDuplicateModal} 
     closeAlert={closeAlert} 
+    apiBaseUrl={apiBaseUrl}
   />;
 }
 
