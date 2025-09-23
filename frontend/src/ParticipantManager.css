@@ -1,0 +1,141 @@
+.manager-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 40px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.manager-header h1 {
+  margin: 0;
+}
+
+.close-button {
+  padding: 8px 16px;
+  text-decoration: none;
+  background-color: #e9ecef;
+  color: #495057;
+  border-radius: 5px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+.close-button:hover {
+  background-color: #dee2e6;
+}
+
+.manager-content {
+  padding-top: 30px;
+}
+
+.add-participant-section, .participant-list-section {
+  margin-bottom: 40px;
+}
+
+.add-form {
+  display: flex;
+  gap: 10px;
+  align-items: center; /* flex 아이템들의 세로 정렬을 중앙으로 맞춥니다. */
+}
+
+.add-form input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1em;
+}
+
+.add-form button {
+  padding: 10px 15px;
+  border: none;
+  background-color: #4C6EF5;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.2s;
+  flex-shrink: 0; /* 버튼 너비가 줄어들지 않도록 설정 */
+}
+
+.add-form button:hover {
+  background-color: #3B5BDB; /* 호버 색상 변경 */
+}
+
+.participant-list {
+  list-style: none;
+  padding: 0;
+}
+
+.participant-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: #f8f9fa;
+  border: 1px solid #f1f3f5;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.participant-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: #868e96;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.action-button:hover {
+  color: #212529;
+  background-color: #e9ecef;
+}
+
+.edit-form {
+  display: flex;
+  flex-grow: 1;
+  gap: 8px;
+  align-items: center; /* 버튼 높이 맞춤 */
+}
+
+.edit-form input {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #4C6EF5; /* 푸른색 계열로 변경 */
+  border-radius: 4px;
+  font-size: 1em;
+}
+
+.edit-form button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.edit-form .save-edit-button {
+  background-color: #4C6EF5; /* 푸른색 계열로 변경 */
+  color: white;
+}
+.edit-form .save-edit-button:hover {
+  background-color: #0b5ed7;
+}
+
+.edit-form .cancel-edit-button {
+  background-color: #e9ecef;
+}

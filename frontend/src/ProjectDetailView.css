@@ -1,0 +1,465 @@
+.detail-container {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  height: 100%;
+  display: flex;
+  flex-direction: column; /* 아이템을 세로로 쌓음 */
+}
+
+.detail-header, .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px; /* 패딩 조정 */
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0; /* 헤더는 줄어들지 않음 */
+}
+.content-body {
+  padding: 30px 40px;
+  flex-grow: 1; /* 남은 공간을 모두 차지 */
+  overflow-y: auto; /* 내용이 넘치면 스크롤바 생성 */
+  display: flex;
+  flex-direction: column; /* 내부 섹션들을 세로로 쌓음 */
+  gap: 30px; /* 참여자와 지출 섹션 사이의 간격 */
+}
+.detail-section {
+  display: flex;
+  flex-direction: column;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+.detail-title, .section-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+}
+.section-header h2 {
+  font-size: 1.25em;
+  color: var(--text-secondary);
+}
+
+.settle-button, .manage-button {
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+.settle-button {
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 5px;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+.settle-button:hover {
+  background-color: var(--primary-color-light);
+}
+.manage-button {
+  padding: 6px 12px;
+  background-color: var(--bg-secondary-color);
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 20px;
+}
+.item-list li:not(.expense-item) {
+  padding: 12px;
+  background-color: var(--bg-color);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.expense-section {
+  flex-grow: 1;
+  min-height: 0; /* flex-grow가 제대로 작동하기 위해 필요 */
+}
+.expense-list {
+  flex-grow: 1;
+  overflow-y: auto; /* 이 부분만 스크롤되도록 설정 */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  padding-right: 10px; /* 스크롤바 공간 확보 */
+}
+.item-list li:not(.expense-item) {
+  padding: 12px;
+  background-color: var(--bg-color);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.expense-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 12px; /* 항목 간 간격 */
+}
+.expense-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+.expense-item-icon {
+  background-color: var(--bg-secondary-color);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.expense-item-details {
+  text-align: right;
+  flex-shrink: 0;
+}
+.expense-item-amount {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--primary-color);
+}
+.expense-item-payer {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.add-form {
+  display: flex;
+  gap: 10px;
+}
+.expense-form {
+  flex-wrap: wrap;
+}
+
+.expense-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* 아이콘 사이 간격 */
+  margin-left: 10px;
+}
+
+.expense-item .action-button {
+  background: none;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  color: #adb5bd; /* 기본 아이콘 색상 */
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.expense-item .action-button:hover {
+  color: #495057; /* 호버 시 아이콘 색상 */
+  background-color: #f1f3f5; /* 호버 시 배경색 */
+}
+
+/* --- 기존 .add-form input, select 스타일 수정 --- */
+.add-form input,
+.add-form select {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  width: 100%;
+  font-size: 1em; /* 폰트 크기 통일 */
+}
+/* 높이 통일 */
+.add-form select {
+    padding: 0 10px;
+    height: 44px; /* 54px에서 44px로 수정 */
+    box-sizing: border-box;
+}
+
+.expense-form > input,
+.expense-form > .form-group, /* input-with-unit을 form-group으로 변경 */
+.expense-form > select {
+  flex-basis: 100%;
+  margin-bottom: 5px;
+}
+.expense-form > .form-group, /* input-with-unit을 form-group으로 변경 */
+.expense-form > select {
+    flex-basis: calc(50% - 5px);
+}
+.add-form button {
+  padding: 10px 15px;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.add-form button:hover {
+  background-color: var(--primary-color-light);
+}
+.expense-form button[type="submit"] {
+  flex-basis: 100%;
+}
+
+/* --- 기존 .input-with-unit 관련 스타일을 아래 코드로 전체 교체 --- */
+.form-group {
+  position: relative;
+}
+
+.floating-label-group {
+  position: relative;
+}
+
+.floating-label-group input {
+  padding: 5px 36px 6px 12px !important; /* padding-top을 22px에서 18px로 수정 */
+  text-align: right;
+  height: 44px; /* 54px에서 44px로 수정 */
+  box-sizing: border-box;
+}
+
+.floating-label-group label {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: all 0.2s ease-out;
+  transform-origin: 0 0;
+  transform: translateY(11px); /* 16px에서 11px로 수정 */
+}
+
+.floating-label-group .unit {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.floating-label-group input:focus + label,
+.floating-label-group input:not(:placeholder-shown) + label {
+  transform: translateY(6px) scale(0.8); /* 6px에서 4px로 수정 */
+  color: var(--primary-color);
+}
+
+/* --- 분배 방식 버튼 UI 수정 --- */
+.split-method-selector {
+  display: flex;
+  width: 100%;
+  background-color: var(--bg-secondary-color); /* 전체 배경은 연한 회색 */
+  border-radius: 8px;
+  padding: 4px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+.split-method-selector button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px; /* 버튼 모서리를 둥글게 */
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+}
+.split-method-selector button:hover:not(.active) {
+  background-color: #dee2e6 !important;
+}
+.split-method-selector button.active {
+  background-color: #ffffff !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.split-details-section {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 10px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+}
+.split-details-section h4 {
+  margin: 0 0 15px 0;
+  color: var(--text-secondary);
+}
+.split-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* 이름과 입력창 사이 간격 추가 */
+  margin-bottom: 12px; /* 각 항목 사이 간격 추가 */
+}
+.split-detail-row:last-child {
+  margin-bottom: 0;
+}
+.split-detail-row label {
+  flex-basis: 80px; /* 이름 영역 너비 고정 */
+  flex-shrink: 0;
+  text-align: center; /* 오른쪽 정렬로 깔끔하게 */
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.split-detail-row .input-with-unit {
+  position: relative;
+  flex-grow: 1; /* 입력창이 남은 공간을 모두 차지하도록 */
+}
+
+/* --- 기존 스타일과 충돌을 막기 위해 !important 추가 --- */
+.split-detail-row .input-with-unit input {
+    padding: 10px 35px 10px 10px !important;
+    text-align: right;
+    height: 40px !important; /* 높이 조정 */
+    border: 1px solid var(--border-color) !important;
+    border-radius: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background: white !important; /* 배경색 지정 */
+}
+.split-detail-row .input-with-unit input:focus {
+    outline: none;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px var(--accent-color-light) !important;
+}
+
+.split-detail-row .input-with-unit span {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.delete-button {
+  background: none;
+  border: none;
+  padding: 5px;
+  margin-left: 10px;
+  cursor: pointer;
+  color: #adb5bd;
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.delete-button:hover {
+  color: #dc3545;
+  background-color: #f8d7da;
+}
+
+.add-expense-button {
+  padding: 6px 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.add-expense-button:hover {
+  background-color: var(--primary-color-light);
+}
+
+/* 1. 섹션 전체를 감싸는 카드 스타일 */
+.participant-section {
+  background-color: #FFFFFF;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  overflow: hidden; /* 애니메이션이 카드 밖으로 나가지 않도록 설정 (매우 중요!) */
+}
+
+/* 2. 제목 부분(버튼) 스타일 */
+.participant-section .collapsible {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: transparent;
+  border: none;
+  padding: 14px 20px; /* 세로 여백을 동일하게 14px로 고정 */
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 0; /* ✨ 여백 문제 해결을 위해 이 속성을 추가합니다. */
+}
+.participant-section .collapsible:hover {
+  background-color: var(--bg-color);
+}
+.participant-section .collapsible:focus { outline: none; }
+
+.participant-section .section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* h2의 기본 상하 마진을 제거하여 완벽한 세로 중앙 정렬 구현 */
+.participant-section h2 {
+    font-size: 1.1em;
+    margin: 0;
+}
+
+/* 3. '관리' 아이콘 버튼 스타일 */
+.participant-section .manage-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.participant-section .manage-icon-button:hover {
+  background-color: var(--bg-secondary-color);
+  color: var(--text-primary);
+}
+
+/* 4. 참여자 이름 목록을 감싸는 컨테이너와 애니메이션 */
+.participant-list-container {
+    background-color: var(--bg-color);
+    /* 애니메이션 스타일 */
+    transition: max-height 0.3s ease-in-out, border-top-color 0.3s ease-in-out;
+    max-height: 0;
+    overflow: hidden; /* 자식 요소가 넘치지 않도록 설정 (매우 중요) */
+    border-top: 1px solid transparent; /* 닫혔을 때는 투명한 선 */
+}
+.participant-list-container.expanded {
+    max-height: 500px; /* 펼쳐졌을 때의 최대 높이 */
+    border-top-color: var(--border-color); /* 열렸을 때만 선 색상 표시 */
+}
+
+/* 5. 참여자 이름 목록 스타일 */
+.participant-section .participant-list-items {
+  margin: 0;
+  padding: 12px 20px;
+  list-style: none;
+}
+.participant-section .item-list li {
+  background-color: transparent;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+.participant-section .item-list li:last-child {
+  border-bottom: none;
+}

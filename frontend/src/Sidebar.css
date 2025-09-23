@@ -1,0 +1,228 @@
+.sidebar {
+  width: 280px;
+  background-color: #f0f4f9;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20; 
+}
+
+.sidebar-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  height: 72px;
+}
+
+.menu-toggle-button {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.menu-toggle-button:hover {
+    background-color: #e2e8f0;
+}
+.menu-toggle-button svg {
+    color: #4a5568;
+}
+
+.sidebar-content {
+    flex-grow: 1;
+    overflow-y: auto; /* 스크롤 기능 유지 */
+}
+
+.new-project-section {
+    padding: 0 16px;
+    margin-bottom: 16px;
+}
+.new-project-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    background-color: #e2e8f0;
+    border: none;
+    border-radius: 50px;
+    font-size: 1em;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+}
+.new-project-button:hover {
+    background-color: #cbd5e0;
+}
+
+.project-nav {
+  padding: 0 8px;
+}
+.project-nav-header {
+    padding: 8px 12px;
+    font-size: 0.8em;
+    color: #6c757d;
+    white-space: nowrap;
+}
+.project-nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-radius: 50px;
+  margin: 2px 0;
+}
+
+.project-item a {
+  flex-grow: 1;
+  padding: 12px 20px;
+  color: #1f2937;
+  text-decoration: none;
+  border-radius: 50px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+
+.project-item:hover {
+  background-color: #e5e7eb;
+}
+
+.project-item a.active {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 500;
+}
+.project-item:has(a.active):hover {
+    background-color: transparent;
+}
+
+.kebab-menu-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.project-item:hover .kebab-menu-button {
+  opacity: 1;
+}
+
+.kebab-menu-button:hover {
+    background-color: #d1d5db;
+}
+
+.kebab-menu-button svg {
+    width: 20px;
+    height: 20px;
+    color: #4b5563;
+}
+
+/* 드롭다운 메뉴 위치 지정 방식을 fixed로 변경 */
+.dropdown-menu {
+  position: fixed; /* 화면 전체를 기준으로 위치를 잡음 */
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100; /* 다른 모든 요소보다 위에 오도록 높은 z-index 부여 */
+  width: 140px; /* <-- 너비를 120px에서 140px로 수정 */
+  padding: 8px;
+}
+
+.dropdown-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap; /* <-- 이 줄을 추가 */
+}
+
+.dropdown-menu button:hover {
+  background-color: #f3f4f6;
+}
+/* 수정 모드 스타일 */
+.project-item.editing {
+    padding: 10px;
+    display: flex;
+    gap: 5px;
+}
+.project-item.editing input {
+    flex-grow: 1;
+    margin-right: 5px;
+    padding: 8px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+}
+.project-item.editing button {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+
+.sidebar-footer {
+    padding: 16px;
+    margin-top: auto;
+}
+.footer-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #4a5568;
+    white-space: nowrap;
+}
+.footer-link:hover {
+    background-color: #e2e8f0;
+}
+
+
+/* --- 사이드바가 접혔을 때의 스타일 --- */
+.sidebar.collapsed {
+    width: 80px;
+}
+.sidebar.collapsed .new-project-text,
+.sidebar.collapsed .footer-text,
+.sidebar.collapsed .project-item a,
+.sidebar.collapsed .menu-container,
+.sidebar.collapsed .project-nav-header {
+    display: none;
+}
+.sidebar.collapsed .new-project-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    justify-content: center;
+    margin: 0 auto;
+}
+.sidebar.collapsed .footer-link {
+    justify-content: center;
+}
