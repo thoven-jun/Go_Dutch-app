@@ -44,6 +44,8 @@ function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplic
 }
 
 function AppContent() {
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
+
   const [projects, setProjects] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
@@ -88,7 +90,7 @@ function AppContent() {
   const closeCreateProjectModal = () => setIsCreateProjectModalOpen(false);  
 
   const fetchProjects = useCallback(() => {
-    fetch('http://localhost:3001/projects')
+    fetch(`${API_BASE_URL}/projects`)
       .then(res => res.json())
       .then(data => setProjects(data))
       .catch(error => console.error("Error fetching projects:", error));
@@ -100,7 +102,7 @@ function AppContent() {
 
   const handleCreateProject = (projectName, participantNames) => {
     let newProjectData;
-    fetch('http://localhost:3001/projects', {
+    fetch('${API_BASE_URL}/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: projectName, participants: [], expenses: [] })
@@ -110,7 +112,7 @@ function AppContent() {
       newProjectData = newProject;
       if (participantNames && participantNames.length > 0) {
         const addParticipantPromises = participantNames.map(name => {
-          return fetch(`http://localhost:3001/projects/${newProject.id}/participants`, {
+          return fetch(`${API_BASE_URL}/projects/${newProject.id}/participants`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: name })
@@ -129,7 +131,7 @@ function AppContent() {
   };
 
   const handleUpdateProject = (projectId, newName) => {
-    fetch(`http://localhost:3001/projects/${projectId}`, {
+    fetch(`${API_BASE_URL}/projects/${projectId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName })
@@ -141,7 +143,7 @@ function AppContent() {
 
   const handleDeleteProject = (projectId) => {
     showAlert('프로젝트 삭제', '정말 이 프로젝트를 삭제하시겠습니까?\n관련된 모든 참여자와 지출 내역이 함께 삭제됩니다.', () => {
-      fetch(`http://localhost:3001/projects/${projectId}`, {
+      fetch(`${API_BASE_URL}/projects/${projectId}`, {
         method: 'DELETE',
       }).then(res => {
         if (res.ok) {
@@ -173,7 +175,7 @@ function AppContent() {
     const updatePromises = duplicates.map(p => {
       const newName = updatedNames[p.id];
       if (p.name !== newName) {
-        return fetch(`http://localhost:3001/participants/${p.id}`, {
+        return fetch(`${API_BASE_URL}/participants/${p.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newName }),
@@ -184,13 +186,13 @@ function AppContent() {
 
     let finalPromise;
     if (editingParticipantId) {
-      finalPromise = fetch(`http://localhost:3001/participants/${editingParticipantId}`, {
+      finalPromise = fetch(`${API_BASE_URL}/participants/${editingParticipantId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedNames['new'] }),
       });
     } else {
-      finalPromise = fetch(`http://localhost:3001/projects/${projectId}/participants`, {
+      finalPromise = fetch(`${API_BASE_URL}/projects/${projectId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedNames['new'] }),
@@ -207,12 +209,11 @@ function AppContent() {
     setDuplicateModalInfo({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
   };
 
-  // --- ⬇️ 여기부터가 핵심 수정 부분입니다 ⬇️ ---
 
   // 1. 지출 항목 업데이트를 처리하는 함수입니다.
   // 이 함수는 서버에 수정된 데이터를 보내고, 성공하면 전체 프로젝트 목록을 다시 불러온 뒤 모달을 닫습니다.
   const handleUpdateExpense = (expenseId, updatedData) => {
-    fetch(`http://localhost:3001/expenses/${expenseId}`, {
+    fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)

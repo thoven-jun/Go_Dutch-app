@@ -281,7 +281,7 @@ server.patch('/expenses/:id', (req, res) => {
 });
 
 
-server.use(router);
-server.listen(3001, () => {
-  console.log('JSON Server with custom routes is running on port 3001');
+const port = process.env.PORT || 3001;
+server.listen(port, () => {
+  console.log(`JSON Server with custom routes is running on port ${port}`);
 });
