@@ -36,6 +36,11 @@ server.post('/projects', (req, res) => {
   res.status(201).jsonp(newProject);
 });
 
+server.get('/categories', (req, res) => {
+  const db = readDb();
+  res.jsonp(db.categories || []);
+});
+
 // 프로젝트 목록을 가져올 때 항상 참여자와 지출 내역을 포함하여 반환
 server.get('/projects', (req, res) => {
   const db = readDb();
