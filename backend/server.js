@@ -12,6 +12,30 @@ const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null,
 
 // --- 사용자 정의 라우트 ---
 
+server.post('/projects', (req, res) => {
+  const db = readDb();
+  const { name, participants, expenses } = req.body;
+
+  const allIds = [
+    ...db.projects.map(p => p.id),
+    ...db.projects.flatMap(p => p.participants?.map(pt => pt.id) || []),
+    ...db.projects.flatMap(p => p.expenses?.map(e => e.id) || [])
+  ].filter(id => id != null);
+  const maxId = Math.max(0, ...allIds);
+
+  const newProject = {
+    id: maxId + 1,
+    name: name || "새 프로젝트",
+    participants: participants || [],
+    expenses: expenses || [],
+    createdDate: new Date().toISOString()
+  };
+
+  db.projects.push(newProject);
+  writeDb(db);
+  res.status(201).jsonp(newProject);
+});
+
 // 프로젝트 목록을 가져올 때 항상 참여자와 지출 내역을 포함하여 반환
 server.get('/projects', (req, res) => {
   const db = readDb();
