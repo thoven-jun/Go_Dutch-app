@@ -7,6 +7,8 @@ function SettlementResultView({ apiBaseUrl }) {
   const [error, setError] = useState('');
   const { projectId } = useParams();
 
+  const [viewMode, setViewMode] = useState('net'); 
+
   useEffect(() => {
     fetch(`${apiBaseUrl}/projects/${projectId}/settlement`)
       .then(res => {
@@ -30,6 +32,10 @@ function SettlementResultView({ apiBaseUrl }) {
     return <div className="settlement-container">정산 결과를 계산하는 중입니다...</div>;
   }
 
+  // ✨ 2. 현재 viewMode에 따라 보여줄 거래 내역을 결정
+  const transfers = viewMode === 'net' ? result.netTransfers : result.grossTransfers;
+  const sectionTitle = viewMode === 'net' ? '💸 최소 송금 (순액 정산)' : '🧾 모든 거래 (총액 정산)';
+
   return (
     <div className="settlement-container">
       <Link to={`/project/${projectId}`} className="back-link">← 상세 페이지로 돌아가기</Link>
@@ -41,11 +47,28 @@ function SettlementResultView({ apiBaseUrl }) {
         <div><span>1인당 부담액:</span> <strong>{result.perPersonAmount.toLocaleString()}원</strong></div>
       </div>
 
+       {/* ✨ 3. 정산 방식 선택 토글 UI 추가 */}
+      <div className="view-mode-toggle">
+        <button 
+          className={viewMode === 'net' ? 'active' : ''}
+          onClick={() => setViewMode('net')}
+        >
+          순액 정산
+        </button>
+        <button 
+          className={viewMode === 'gross' ? 'active' : ''}
+          onClick={() => setViewMode('gross')}
+        >
+          총액 정산
+        </button>
+      </div>
+
       <div className="transfer-section">
-        <h2>💸 송금할 내역</h2>
-        {result.transfers.length > 0 ? (
+        {/* ✨ 4. 동적으로 결정된 제목과 거래 내역을 렌더링 */}
+        <h2>{sectionTitle}</h2>
+        {transfers.length > 0 ? (
           <ul className="transfer-list">
-            {result.transfers.map((t, index) => (
+            {transfers.map((t, index) => (
               <li key={index} className="transfer-item">
                 <span className="from">{t.from}</span>
                 <span className="arrow">→</span>
@@ -55,7 +78,7 @@ function SettlementResultView({ apiBaseUrl }) {
             ))}
           </ul>
         ) : (
-          <p>정산할 내역이 없습니다. (모든 비용이 0원이거나 정산이 완료되었습니다.)</p>
+          <p>정산할 내역이 없습니다.</p>
         )}
       </div>
     </div>

@@ -235,7 +235,7 @@
 }
 /* ▼▼▼▼▼ select 태그의 padding 값을 input과 유사하게 수정합니다 ▼▼▼▼▼ */
 .add-expense-modal .form-group select {
-  padding: 18px 55px 6px 12px; /* 상(label 공간), 우(화살표 공간), 하, 좌 여백 */
+  padding: 7px 35px 6px 12px; /* 상(label 공간), 우(화살표 공간), 하, 좌 여백 */
   text-align: right;
   text-overflow: ellipsis;
   -webkit-appearance: none; /* iOS 기본 스타일 제거 */

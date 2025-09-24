@@ -88,3 +88,31 @@
 .back-link:hover {
   text-decoration: underline;
 }
+
+.view-mode-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  background-color: var(--bg-secondary-color);
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.view-mode-toggle button {
+  flex: 1;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.view-mode-toggle button.active {
+  background-color: #ffffff;
+  color: var(--primary-color);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
