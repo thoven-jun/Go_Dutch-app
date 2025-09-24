@@ -1,8 +1,16 @@
 const jsonServer = require('json-server');
 const server = jsonServer.create();
-const router = jsonServer.router('db.json');
 const middlewares = jsonServer.defaults();
 const fs = require('fs');
+
+const dbTemplatePath = 'db.template.json';
+const dbPath = 'db.json';
+
+if (!fs.existsSync(dbPath)) {
+  fs.copyFileSync(dbTemplatePath, dbPath);
+}
+
+const router = jsonServer.router(dbPath);
 
 server.use(middlewares);
 server.use(jsonServer.bodyParser);
