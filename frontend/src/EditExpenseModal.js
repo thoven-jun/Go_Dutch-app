@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import FullSplitViewModal from './FullSplitViewModal';
 
-// --- 아이콘 SVG 및 헬퍼 함수 (AddExpenseModal과 동일) ---
+// --- 아이콘 SVG 및 헬퍼 함수 ---
 const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24 24" fill={isLocked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{isLocked ? <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4" /> : <path d="M5 11H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2m-4-4a5 5 0 0 0-10 0v4h10V7z" />}</svg> );
 const formatNumber = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
 const unformatNumber = (str) => { if (typeof str !== 'string' || str.trim() === '') return 0; return Number(str.replace(/,/g, '')); };
-const formatPercentage = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return String(Math.round(num * 10) / 10); };
-
 
 function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUrl }) {
   const [desc, setDesc] = useState('');
@@ -16,12 +15,11 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const [selectedCategory, setSelectedCategory] = useState('');
   const [validationError, setValidationError] = useState('');
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
-
   const [splitParticipantIds, setSplitParticipantIds] = useState(new Set());
-
   const [splitDetails, setSplitDetails] = useState({});
   const [splitDetailStrings, setSplitDetailStrings] = useState({});
   const [lockedParticipants, setLockedParticipants] = useState(new Set());
+  const [isFullSplitViewOpen, setIsFullSplitViewOpen] = useState(false);
 
   const participants = project?.participants || [];
 
@@ -63,6 +61,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
     setSplitDetails(prev => { const newDetails = { ...prev }; unlockedParticipants.forEach((p, i) => { newDetails[p.id] = baseShare + (i < remainder ? 1 : 0); }); return newDetails; });
     setSplitDetailStrings(prev => { const newStrings = { ...prev }; unlockedParticipants.forEach((p, i) => { newStrings[p.id] = String(baseShare + (i < remainder ? 1 : 0)); }); return newStrings; });
   }, [participants, lockedParticipants, splitDetails]);
+  
   const rebalanceAmounts = useCallback((focusedParticipantId = null) => {
     const totalAmount = unformatNumber(amount);
     if (!totalAmount || participants.length === 0) return;
@@ -104,7 +103,6 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
       setLockedParticipants(new Set(expense.locked_participant_ids || []));
       setPennyRoundingTargetId(expense.penny_rounding_target_id || '');
 
-      // 저장된 분담 참여자가 있으면 불러오고, 없으면 전체 참여자를 기본값으로 설정
       if (expense.split_participants && expense.split_participants.length > 0) {
         setSplitParticipantIds(new Set(expense.split_participants));
       } else {
@@ -119,7 +117,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
       setDefaultSplits(method);
   }
   
-useEffect(() => {
+  useEffect(() => {
     if (isOpen && (splitMethod === 'amount' || splitMethod === 'percentage') && lockedParticipants.size === 0) {
         setDefaultSplits(splitMethod);
     }
@@ -136,6 +134,7 @@ useEffect(() => {
         setSplitDetailStrings(prev => ({ ...prev, [participantId]: String(numericValue) }));
     }
   };
+
   const handleSplitDetailBlur = (participantId) => {
       if (splitMethod === 'amount') rebalanceAmounts(participantId);
       else if (splitMethod === 'percentage') rebalancePercentages(participantId);
@@ -143,7 +142,6 @@ useEffect(() => {
   
   const toggleLock = (participantId) => { setLockedParticipants(prev => { const newSet = new Set(prev); if (newSet.has(participantId)) newSet.delete(participantId); else newSet.add(participantId); return newSet; }); };
 
-  // ✨ 3. 참여자 선택 핸들러 추가
   const handleParticipantSelectionChange = (participantId) => {
     setSplitParticipantIds(prev => {
       const newSet = new Set(prev);
@@ -156,14 +154,20 @@ useEffect(() => {
     });
   };
 
+  const handleSelectAllToggle = () => {
+    if (splitParticipantIds.size === participants.length) {
+      setSplitParticipantIds(new Set());
+    } else {
+      setSplitParticipantIds(new Set(participants.map(p => p.id)));
+    }
+  };
+
   const handleSaveExpense = () => {
     const totalAmount = unformatNumber(amount);
-    // ✨ 4. 유효성 검사 추가
     if (splitMethod === 'equally' && splitParticipantIds.size === 0) {
       setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.');
       return;
     }
-    // ... (기존 유효성 검사)
     if (!desc.trim() || !totalAmount || !payerId || !project?.id) {
         setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.');
         return;
@@ -188,7 +192,6 @@ useEffect(() => {
       category_id: Number(selectedCategory),
       locked_participant_ids: Array.from(lockedParticipants),
       penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null,
-      // ✨ 5. 수정된 분담 참여자 목록을 서버로 전송
       split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [],
     };
     onSave(expense.id, updatedExpenseData);
@@ -196,95 +199,118 @@ useEffect(() => {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content add-expense-modal" onClick={e => e.stopPropagation()}>
-        <h2>지출 항목 수정</h2>
-        <div className="expense-form">
-          <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
-          <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
-          <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
-          <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
-          <div className="form-item-full split-method-selector">
-            <button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button>
-            <button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button>
-            <button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button>
-          </div>
+  const areAllSelected = participants.length > 0 && splitParticipantIds.size === participants.length;
 
-          {/* ✨ 6. '균등 부담' UI를 AddExpenseModal과 동일하게 수정 */}
-          {splitMethod === 'equally' && (
-            <>
-              <div className="form-item-full split-participants-section">
-                <h4>분담할 참여자</h4>
-                <div className="participant-checkbox-list">
+  return (
+    <>
+      <div className="modal-overlay">
+        <div className="modal-content add-expense-modal" onClick={e => e.stopPropagation()}>
+          <h2>지출 항목 수정</h2>
+          <div className="expense-form">
+            <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
+            <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
+            <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
+            <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+            <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
+
+            {splitMethod === 'equally' && (
+              <>
+                <div className="form-item-full split-participants-section">
+                  <div className="split-participants-header">
+                    <h4>분담할 참여자</h4>
+                    <button type="button" onClick={handleSelectAllToggle} className="select-all-button">
+                      {areAllSelected ? '전체 해제' : '전체 선택'}
+                    </button>
+                  </div>
+                  <div className="participant-checkbox-list">
+                    {participants.map(p => (
+                      <label key={p.id} className="participant-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={splitParticipantIds.has(p.id)}
+                          onChange={() => handleParticipantSelectionChange(p.id)}
+                        />
+                        <span>{p.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-item-full">
+                  <div className="form-group">
+                    <label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label>
+                    <select 
+                      id="penny-rounding-select-edit" 
+                      value={pennyRoundingTargetId} 
+                      onChange={e => setPennyRoundingTargetId(e.target.value)}
+                    >
+                      <option value="">기능 사용 안함</option>
+                      {participants
+                        .filter(p => splitParticipantIds.has(p.id))
+                        .map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {(splitMethod === 'amount' || splitMethod === 'percentage') && (
+              <div className="form-item-full split-details-section">
+                <div className="split-participants-header">
+                  <h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4>
+                  <button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>
+                    전체보기
+                  </button>
+                </div>
+                <div className="split-detail-list">
                   {participants.map(p => (
-                    <label key={p.id} className="participant-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={splitParticipantIds.has(p.id)}
-                        onChange={() => handleParticipantSelectionChange(p.id)}
-                      />
-                      <span>{p.name}</span>
-                    </label>
+                    <div key={p.id} className="split-detail-row">
+                      <label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label>
+                      <div className="input-with-unit">
+                        <input
+                          id={`split-detail-edit-${p.id}`}
+                          type="text"
+                          value={splitDetailStrings[p.id] || ''}
+                          onChange={e => handleSplitDetailChange(p.id, e.target.value)}
+                          onBlur={() => handleSplitDetailBlur(p.id)}
+                          placeholder="0"
+                          inputMode="numeric"
+                          disabled={lockedParticipants.has(p.id)}
+                        />
+                        <span>{splitMethod === 'amount' ? '원' : '%'}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`}
+                        onClick={() => toggleLock(p.id)}
+                        title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}
+                      >
+                        <LockIcon isLocked={lockedParticipants.has(p.id)} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
-
-              <div className="form-item-full">
-                <div className="form-group">
-                  <label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label>
-                  <select 
-                    id="penny-rounding-select-edit" 
-                    value={pennyRoundingTargetId} 
-                    onChange={e => setPennyRoundingTargetId(e.target.value)}
-                  >
-                    <option value="">기능 사용 안함</option>
-                    {participants
-                      .filter(p => splitParticipantIds.has(p.id))
-                      .map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </>
-          )}
-
-          {(splitMethod === 'amount' || splitMethod === 'percentage') && (
-    <div className="form-item-full split-details-section">
-      <h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4>
-      {participants.map(p => (
-        <div key={p.id} className="split-detail-row">
-          <label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label>
-          <div className="input-with-unit">
-            <input
-              id={`split-detail-edit-${p.id}`}
-              type="text"
-              value={splitDetailStrings[p.id] || ''}
-              onChange={e => handleSplitDetailChange(p.id, e.target.value)}
-              onBlur={() => handleSplitDetailBlur(p.id)}
-              placeholder="0"
-              inputMode="numeric"
-              disabled={lockedParticipants.has(p.id)}
-            />
-            <span>{splitMethod === 'amount' ? '원' : '%'}</span>
+            )}
           </div>
-          <button
-            type="button"
-            className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`}
-            onClick={() => toggleLock(p.id)}
-            title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}
-          >
-            <LockIcon isLocked={lockedParticipants.has(p.id)} />
-          </button>
+          <div className="modal-footer">{validationError && <p className="error-message">{validationError}</p>}<div className="modal-buttons"><button type="button" className="cancel-button" onClick={onClose}>취소</button><button type="button" className="confirm-button" onClick={handleSaveExpense}>저장</button></div></div>
         </div>
-      ))}
-    </div>
-  )}
-        </div>
-        <div className="modal-footer">{validationError && <p className="error-message">{validationError}</p>}<div className="modal-buttons"><button type="button" className="cancel-button" onClick={onClose}>취소</button><button type="button" className="confirm-button" onClick={handleSaveExpense}>저장</button></div></div>
       </div>
-    </div>
+
+      <FullSplitViewModal
+        isOpen={isFullSplitViewOpen}
+        onClose={() => setIsFullSplitViewOpen(false)}
+        participants={participants}
+        splitMethod={splitMethod}
+        splitDetailStrings={splitDetailStrings}
+        lockedParticipants={lockedParticipants}
+        handleSplitDetailChange={handleSplitDetailChange}
+        handleSplitDetailBlur={handleSplitDetailBlur}
+        toggleLock={toggleLock}
+      />
+    </>
   );
 }
 export default EditExpenseModal;

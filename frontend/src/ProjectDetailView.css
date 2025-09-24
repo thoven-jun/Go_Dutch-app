@@ -480,20 +480,45 @@
     transition: none;
 }
 .participant-list-container.expanded {
-    max-height: 500px; /* 펼쳐졌을 때의 최대 높이 */
-    border-top-color: var(--border-color); /* 열렸을 때만 선 색상 표시 */
+    /* ✨ 4명 초과 시 스크롤이 생기도록 최대 높이 지정 및 스크롤바 추가 */
+    max-height: 180px; /* (li 높이 약 45px * 4) */
+    overflow-y: auto;
+    border-top-color: var(--border-color);
+}
+/* ✨ [추가] 참여자 목록 스크롤바 디자인 */
+.participant-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+.participant-list-container::-webkit-scrollbar-track {
+  background: transparent; /* 트랙 배경은 투명하게 */
+  margin: 12px 0; /* 위아래 여백 */
+}
+.participant-list-container::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.participant-list-container::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
 }
 
 /* 5. 참여자 이름 목록 스타일 */
 .participant-section .participant-list-items {
   margin: 0;
-  padding: 12px 20px;
+  padding: 7px 10px 0px 25px; /* 사용자 지정 padding 값 반영 */
   list-style: none;
+  /* ✨ [추가] 2열 그리드 레이아웃 설정 */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2개의 열을 동일한 너비로 생성 */
+  gap: 0 16px; /* 열 사이의 간격 */
 }
 .participant-section .item-list li {
   background-color: transparent;
   padding: 10px 4px;
   border-bottom: 1px solid var(--border-color);
+  /* ✨ 그리드 아이템이 넘칠 경우 ...으로 표시 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .participant-section .item-list li:last-child {
   border-bottom: none;
