@@ -7,7 +7,7 @@ const unformatNumber = (str) => { if (typeof str !== 'string' || str.trim() === 
 const formatPercentage = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return String(Math.round(num * 10) / 10); };
 
 
-function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
+function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUrl }) {
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState('');
@@ -15,9 +15,9 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [validationError, setValidationError] = useState('');
-
-  // --- ✨ [추가] 10원 몰아주기 상태 변수 ---
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
+
+  const [splitParticipantIds, setSplitParticipantIds] = useState(new Set());
 
   const [splitDetails, setSplitDetails] = useState({});
   const [splitDetailStrings, setSplitDetailStrings] = useState({});
@@ -85,26 +85,33 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
       setDesc(expense.desc);
       setAmount(formatNumber(expense.amount));
       setPayerId(expense.payer_id || ''); 
-      setSplitMethod(expense.split_method || 'equally');
+      const method = expense.split_method || 'equally';
+      setSplitMethod(method);
       setSelectedCategory(expense.category_id || '');
       setValidationError('');
       const initialDetails = expense.split_details || {};
       setSplitDetails(initialDetails);
       const initialStrings = {};
-      const method = expense.split_method || 'equally';
       if (method !== 'equally') {
         participants.forEach(p => {
             const value = initialDetails[p.id];
             if (value !== undefined) {
-            initialStrings[p.id] = method === 'amount' ? formatNumber(value) : String(value);
+              initialStrings[p.id] = method === 'amount' ? formatNumber(value) : String(value);
             }
         });
       }
       setSplitDetailStrings(initialStrings);
       setLockedParticipants(new Set(expense.locked_participant_ids || []));
       setPennyRoundingTargetId(expense.penny_rounding_target_id || '');
+
+      // 저장된 분담 참여자가 있으면 불러오고, 없으면 전체 참여자를 기본값으로 설정
+      if (expense.split_participants && expense.split_participants.length > 0) {
+        setSplitParticipantIds(new Set(expense.split_participants));
+      } else {
+        setSplitParticipantIds(new Set(participants.map(p => p.id)));
+      }
     }
-  }, [isOpen, expense, participants]);
+  }, [isOpen, expense, participants, apiBaseUrl]);
   
   const handleSplitMethodChange = (method) => {
       setSplitMethod(method);
@@ -112,7 +119,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
       setDefaultSplits(method);
   }
   
-  useEffect(() => {
+useEffect(() => {
     if (isOpen && (splitMethod === 'amount' || splitMethod === 'percentage') && lockedParticipants.size === 0) {
         setDefaultSplits(splitMethod);
     }
@@ -136,8 +143,27 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
   
   const toggleLock = (participantId) => { setLockedParticipants(prev => { const newSet = new Set(prev); if (newSet.has(participantId)) newSet.delete(participantId); else newSet.add(participantId); return newSet; }); };
 
+  // ✨ 3. 참여자 선택 핸들러 추가
+  const handleParticipantSelectionChange = (participantId) => {
+    setSplitParticipantIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(participantId)) {
+        newSet.delete(participantId);
+      } else {
+        newSet.add(participantId);
+      }
+      return newSet;
+    });
+  };
+
   const handleSaveExpense = () => {
     const totalAmount = unformatNumber(amount);
+    // ✨ 4. 유효성 검사 추가
+    if (splitMethod === 'equally' && splitParticipantIds.size === 0) {
+      setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.');
+      return;
+    }
+    // ... (기존 유효성 검사)
     if (!desc.trim() || !totalAmount || !payerId || !project?.id) {
         setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.');
         return;
@@ -155,13 +181,15 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
             return;
         }
     }
+
     const updatedExpenseData = {
       desc, amount: totalAmount, payer_id: Number(payerId),
       split_method: splitMethod, split_details: splitDetails,
       category_id: Number(selectedCategory),
       locked_participant_ids: Array.from(lockedParticipants),
-      // --- ✨ [추가] 몰아주기 대상 ID 전송 ---
-      penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null
+      penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null,
+      // ✨ 5. 수정된 분담 참여자 목록을 서버로 전송
+      split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [],
     };
     onSave(expense.id, updatedExpenseData);
   };
@@ -182,23 +210,48 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave }) {
             <button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button>
             <button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button>
           </div>
+
+          {/* ✨ 6. '균등 부담' UI를 AddExpenseModal과 동일하게 수정 */}
           {splitMethod === 'equally' && (
-            <div className="form-item-full">
-              <div className="form-group">
-                <label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label>
-                <select 
-                  id="penny-rounding-select-edit" 
-                  value={pennyRoundingTargetId} 
-                  onChange={e => setPennyRoundingTargetId(e.target.value)}
-                >
-                  <option value="">기능 사용 안함</option>
+            <>
+              <div className="form-item-full split-participants-section">
+                <h4>분담할 참여자</h4>
+                <div className="participant-checkbox-list">
                   {participants.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <label key={p.id} className="participant-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={splitParticipantIds.has(p.id)}
+                        onChange={() => handleParticipantSelectionChange(p.id)}
+                      />
+                      <span>{p.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
-            </div>
+
+              <div className="form-item-full">
+                <div className="form-group">
+                  <label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label>
+                  <select 
+                    id="penny-rounding-select-edit" 
+                    value={pennyRoundingTargetId} 
+                    onChange={e => setPennyRoundingTargetId(e.target.value)}
+                  >
+                    <option value="">기능 사용 안함</option>
+                    {participants
+                      .filter(p => splitParticipantIds.has(p.id))
+                      .map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
           )}
+
+          {splitMethod === 'amount' && null /* 금액 지정 UI */ }
+          {splitMethod === 'percentage' && null /* 비율 지정 UI */ }
         </div>
         <div className="modal-footer">{validationError && <p className="error-message">{validationError}</p>}<div className="modal-buttons"><button type="button" className="cancel-button" onClick={onClose}>취소</button><button type="button" className="confirm-button" onClick={handleSaveExpense}>저장</button></div></div>
       </div>

@@ -316,6 +316,7 @@ function AppContent() {
         project={editExpenseModalInfo.project}
         expense={editExpenseModalInfo.expense}
         onSave={(...args) => handleUpdateExpense(...args, apiBaseUrl)}
+        apiBaseUrl={apiBaseUrl}
       />
 
       <CreateProjectModal

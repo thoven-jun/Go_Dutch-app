@@ -57,6 +57,22 @@ server.get('/projects', (req, res) => {
   res.jsonp(projectsWithDetails);
 });
 
+server.delete('/projects/:id', (req, res) => {
+  const { id } = req.params;
+  const projectId = parseInt(id);
+  const db = readDb();
+
+  const projectIndex = db.projects.findIndex(p => p.id === projectId);
+
+  if (projectIndex > -1) {
+    db.projects.splice(projectIndex, 1); // 프로젝트 삭제
+    writeDb(db);
+    res.status(200).jsonp({ message: 'Project deleted successfully' });
+  } else {
+    res.status(404).jsonp({ error: "Project not found" });
+  }
+});
+
 // 참여자 이름 수정
 server.patch('/participants/:id', (req, res) => {
   const { id } = req.params;

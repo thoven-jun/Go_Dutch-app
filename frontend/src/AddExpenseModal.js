@@ -194,36 +194,42 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
           {/* ✨ 6. '균등 부담'일 때만 참여자 선택 UI가 보이도록 JSX 코드를 수정합니다. */}
           {splitMethod === 'equally' && (
-            <div className="form-item-full split-participants-section">
-              <h4>분담할 참여자</h4>
-              <div className="participant-checkbox-list">
-                {participants.map(p => (
-                  <label key={p.id} className="participant-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={splitParticipantIds.has(p.id)}
-                      onChange={() => handleParticipantSelectionChange(p.id)}
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="form-group">
-                <label htmlFor="penny-rounding-select-add">10원 미만 단위 몰아주기</label>
-                <select 
-                  id="penny-rounding-select-add" 
-                  value={pennyRoundingTargetId} 
-                  onChange={e => setPennyRoundingTargetId(e.target.value)}
-                >
-                  <option value="">기능 사용 안함</option>
-                  {participants
-                    .filter(p => splitParticipantIds.has(p.id))
-                    .map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
+            <>
+              <div className="form-item-full split-participants-section">
+                <h4>분담할 참여자</h4>
+                <div className="participant-checkbox-list">
+                  {participants.map(p => (
+                    <label key={p.id} className="participant-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={splitParticipantIds.has(p.id)}
+                        onChange={() => handleParticipantSelectionChange(p.id)}
+                      />
+                      <span>{p.name}</span>
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
-            </div>
+
+              {/* ✨ '몰아주기' 영역을 별도의 div로 분리합니다. */}
+              <div className="form-item-full">
+                <div className="form-group">
+                  <label htmlFor="penny-rounding-select-add">10원 미만 단위 몰아주기</label>
+                  <select 
+                    id="penny-rounding-select-add" 
+                    value={pennyRoundingTargetId} 
+                    onChange={e => setPennyRoundingTargetId(e.target.value)}
+                  >
+                    <option value="">기능 사용 안함</option>
+                    {participants
+                      .filter(p => splitParticipantIds.has(p.id))
+                      .map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
           )}
 
           {splitMethod === 'amount' && null /* 금액 지정 UI */ }
