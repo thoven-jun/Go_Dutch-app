@@ -152,6 +152,28 @@
   background: #adb5bd;
 }
 
+/* ✨ 실시간 오차 메시지 스타일 */
+.split-error-details {
+  display: flex; /* 가로로 정렬 */
+  justify-content: flex-end; /* 오른쪽 정렬 */
+  gap: 12px; /* 항목 사이 간격 */
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #fff5f5;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: #721c24;
+}
+
+.split-error-details span {
+  font-weight: 500;
+}
+
+.split-error-details span.difference {
+  font-weight: 700; /* 오차는 굵게 표시 */
+}
+
 .add-expense-modal .split-detail-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
 .add-expense-modal .split-detail-row:last-child { margin-bottom: 0; }
 .add-expense-modal .split-detail-row label {
@@ -314,7 +336,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
 }
 .split-participants-header h4 {
   margin: 0;
@@ -328,14 +350,9 @@
   font-size: 0.85em;
   font-weight: 500;
   cursor: pointer;
-  padding: 0px 8px;
+  padding: 0px 10px 13px 8px;
 }
 
-.split-participants-section h4 {
-  margin: 0px;
-  color: var(--text-secondary);
-  font-size: 0.9em;
-}
 .participant-checkbox-list {
   max-height: 140px;
   overflow-y: auto;
