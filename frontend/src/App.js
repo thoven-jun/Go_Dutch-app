@@ -11,14 +11,23 @@ import AddExpenseModal from './AddExpenseModal';
 import EditExpenseModal from './EditExpenseModal';
 import CreateProjectModal from './CreateProjectModal';
 import ParticipantManager from './ParticipantManager';
+import ParticipantOrderModal from './ParticipantOrderModal';
 import './App.css';
 
-// ProjectDetailView Wrapper
-function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, isParticipantsExpanded, onToggleParticipants, openEditExpenseModal, apiBaseUrl }) {
+// ProjectDetailView Wrapper 수정
+// ✨ props에 participantListStates와 onToggleParticipants를 추가합니다.
+function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
   const { projectId } = useParams();
   const list = Array.isArray(projects) ? projects : Object.values(projects || {});
   const project = list.find(p => p.id === parseInt(projectId));
   
+  if (!project) {
+    return <div>프로젝트를 로딩 중이거나, 유효하지 않은 프로젝트입니다.</div>;
+  }
+
+  // ✨ 전달받은 participantListStates를 사용하여 현재 프로젝트의 확장 상태를 결정합니다.
+  const isExpanded = participantListStates[projectId] !== false;
+
   return <ProjectDetailView 
     project={project} 
     onUpdate={onUpdate}
@@ -26,15 +35,16 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAl
     showAlert={showAlert}
     closeAlert={closeAlert}
     openAddExpenseModal={openAddExpenseModal}
-    isParticipantsExpanded={isParticipantsExpanded}
-    onToggleParticipants={onToggleParticipants}
     openEditExpenseModal={openEditExpenseModal}
     apiBaseUrl={apiBaseUrl}
+    // ✨ 계산된 상태와, projectId가 적용된 핸들러를 전달합니다.
+    isParticipantsExpanded={isExpanded} 
+    onToggleParticipants={() => onToggleParticipants(projectId)}
   />;
 }
 
-// ParticipantManager Wrapper
-function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert, apiBaseUrl }) {
+// ParticipantManager Wrapper (기존과 동일)
+function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert, apiBaseUrl, onOpenOrderModal }) {
   return <ParticipantManager 
     projects={projects} 
     onUpdate={onUpdate} 
@@ -42,6 +52,7 @@ function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplic
     onOpenDuplicateModal={onOpenDuplicateModal} 
     closeAlert={closeAlert} 
     apiBaseUrl={apiBaseUrl}
+    onOpenOrderModal={onOpenOrderModal}
   />;
 }
 
@@ -50,26 +61,28 @@ function AppContent() {
 
   const [projects, setProjects] = useState([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  
   const [renameModalInfo, setRenameModalInfo] = useState({ isOpen: false, projectId: null, currentName: '' });
-  
-  const [duplicateModalInfo, setDuplicateModalInfo] = useState({ 
-    isOpen: false, 
-    duplicates: [], 
-    newName: '', 
-    projectId: null, 
-    editingParticipantId: null 
-  });
-  
+  const [duplicateModalInfo, setDuplicateModalInfo] = useState({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   const [addExpenseModalInfo, setAddExpenseModalInfo] = useState({ isOpen: false, project: null });
   const [editExpenseModalInfo, setEditExpenseModalInfo] = useState({ isOpen: false, project: null, expense: null });
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
-  const [isParticipantsExpanded, setIsParticipantsExpanded] = useState(true);
-  const toggleParticipantsList = () => setIsParticipantsExpanded(prev => !prev);
+  const [orderModalInfo, setOrderModalInfo] = useState({ isOpen: false, project: null });
+  const [participantListStates, setParticipantListStates] = useState({});
 
   const navigate = useNavigate();
 
+  const handleToggleParticipants = (projectId) => {
+    setParticipantListStates(prevStates => ({
+      ...prevStates,
+      [projectId]: prevStates[projectId] === false ? true : false
+    }));
+  };
+
+  const openOrderModal = (project) => setOrderModalInfo({ isOpen: true, project });
+  const closeOrderModal = () => setOrderModalInfo({ isOpen: false, project: null });
+
+  // ... (showAlert, closeAlert, Modal 핸들러, fetchProjects 등 다른 함수들은 기존과 동일)
   const showAlert = (title, message, onConfirm = null) => {
     setAlertInfo({ isOpen: true, title, message, onConfirm });
   };
@@ -211,18 +224,15 @@ function AppContent() {
     setDuplicateModalInfo({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
   };
 
-
-  // 1. 지출 항목 업데이트를 처리하는 함수입니다.
-  // 이 함수는 서버에 수정된 데이터를 보내고, 성공하면 전체 프로젝트 목록을 다시 불러온 뒤 모달을 닫습니다.
   const handleUpdateExpense = (expenseId, updatedData, apiBaseUrl) => {
-    fetch(`${apiBaseUrl}/expenses/${expenseId}`, { // ✨ 수정
+    fetch(`${apiBaseUrl}/expenses/${expenseId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)
     }).then(res => {
       if (!res.ok) throw new Error("Server response was not ok");
-      fetchProjects(); // 2. 데이터 업데이트 후 목록 새로고침
-      closeEditExpenseModal(); // 3. 수정 모달 닫기
+      fetchProjects();
+      closeEditExpenseModal();
     }).catch(error => console.error("Failed to update expense:", error));
   };
 
@@ -252,10 +262,11 @@ function AppContent() {
                       onOpenDuplicateModal={handleOpenDuplicateModal}
                       showAlert={showAlert} 
                       closeAlert={closeAlert}
-                      openAddExpenseModal={openAddExpenseModal}
-                      isParticipantsExpanded={isParticipantsExpanded}
-                      onToggleParticipants={toggleParticipantsList}
+                      openAddExpenseModal={openAddExpenseModal}                    
                       openEditExpenseModal={openEditExpenseModal}
+                      // ✨ 상태 객체와 핸들러를 props로 전달합니다.
+                      participantListStates={participantListStates}
+                      onToggleParticipants={handleToggleParticipants}
                       apiBaseUrl={apiBaseUrl}
                     />} 
                   />
@@ -267,12 +278,13 @@ function AppContent() {
                       showAlert={showAlert}
                       onOpenDuplicateModal={handleOpenDuplicateModal}
                       closeAlert={closeAlert}
-                      apiBaseUrl={apiBaseUrl} // ✨ 추가
+                      apiBaseUrl={apiBaseUrl}
+                      onOpenOrderModal={openOrderModal}
                     />}
                   />
                   <Route 
                     path="/project/:projectId/settlement" 
-                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} />} // ✨ 추가
+                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} />}
                   />
                 </Routes>
           </div>
@@ -307,9 +319,6 @@ function AppContent() {
         onUpdate={fetchProjects}
         apiBaseUrl={apiBaseUrl}
       />
-      
-      {/* 4. 'onSave' prop에 위에서 정의한 'handleUpdateExpense' 함수를 정확히 연결합니다. */}
-      {/* 이 부분이 '저장' 버튼 기능의 핵심입니다. */}
       <EditExpenseModal
         isOpen={editExpenseModalInfo.isOpen}
         onClose={closeEditExpenseModal}
@@ -318,11 +327,17 @@ function AppContent() {
         onSave={(...args) => handleUpdateExpense(...args, apiBaseUrl)}
         apiBaseUrl={apiBaseUrl}
       />
-
       <CreateProjectModal
         isOpen={isCreateProjectModalOpen}
         onClose={closeCreateProjectModal}
         onCreateProject={handleCreateProject}
+      />
+      <ParticipantOrderModal
+        isOpen={orderModalInfo.isOpen}
+        onClose={closeOrderModal}
+        project={orderModalInfo.project}
+        onSave={fetchProjects}
+        apiBaseUrl={apiBaseUrl}
       />
     </>
   );

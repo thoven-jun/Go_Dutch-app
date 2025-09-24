@@ -53,10 +53,10 @@ server.get('/categories', (req, res) => {
 server.get('/projects', (req, res) => {
   const db = readDb();
   const categories = db.categories || [];
-  
+
   const projectsWithDetails = db.projects.map(project => ({
     ...project,
-    participants: project.participants || [],
+    participants: (project.participants || []).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)),
     expenses: (project.expenses || []).map(expense => {
       const category = categories.find(c => c.id === expense.category_id);
       return { ...expense, category };
@@ -103,6 +103,21 @@ server.patch('/participants/:id', (req, res) => {
   }
 });
 
+server.patch('/projects/:id', (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const db = readDb();
+  const project = db.projects.find(p => p.id === parseInt(id));
+
+  if (project) {
+    project.name = name; // 전달받은 새 이름으로 변경
+    writeDb(db);
+    res.status(200).jsonp(project);
+  } else {
+    res.status(404).jsonp({ error: "Project not found" });
+  }
+});
+
 // 프로젝트에 참여자 추가
 server.post('/projects/:projectId/participants', (req, res) => {
   const { projectId } = req.params;
@@ -119,12 +134,43 @@ server.post('/projects/:projectId/participants', (req, res) => {
     ].filter(id => id != null);
     const maxId = Math.max(0, ...allIds);
     
-    const newParticipant = { id: maxId + 1, name: name };
+    const newParticipant = { 
+      id: maxId + 1, 
+      name: name,
+      orderIndex: project.participants.length 
+    };
+    
     project.participants.push(newParticipant);
     writeDb(db);
     res.status(201).jsonp(newParticipant);
   } else {
     res.status(404).jsonp({ error: "Project not found" });
+  }
+});
+
+// --- ✨ [추가] 참여자 순서 업데이트 API ---
+server.post('/projects/:projectId/participants/reorder', (req, res) => {
+  const { projectId } = req.params;
+  const { orderedParticipantIds } = req.body; // 순서대로 정렬된 ID 배열
+  const db = readDb();
+  const project = db.projects.find(p => p.id === parseInt(projectId));
+
+  if (project && Array.isArray(orderedParticipantIds)) {
+    // ID를 키로, 참여자 객체를 값으로 하는 맵을 만들어 빠른 조회를 가능하게 함
+    const participantMap = new Map(project.participants.map(p => [p.id, p]));
+    
+    // 프론트에서 보내준 ID 순서대로 orderIndex를 0부터 다시 부여
+    orderedParticipantIds.forEach((id, index) => {
+      const participant = participantMap.get(id);
+      if (participant) {
+        participant.orderIndex = index;
+      }
+    });
+    
+    writeDb(db);
+    res.status(200).jsonp(project.participants);
+  } else {
+    res.status(400).jsonp({ error: "Invalid project or data" });
   }
 });
 

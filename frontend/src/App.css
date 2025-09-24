@@ -2,20 +2,21 @@
   display: flex;
   height: 100vh;
   background-color: #f8f9fa;
+  overflow: hidden; /* App 전체에서는 스크롤이 생기지 않도록 방지 */
 }
 
 .main-content {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  /* ✨ overflow-y 속성 제거 */
   transition: margin-left 0.3s ease;
-  position: relative; /* z-index 기준점 추가 */
-  z-index: 10;      /* 사이드바보다 낮은 z-index 추가 */
+  min-width: 0; /* flex item이 줄어들 때 내용이 깨지는 것을 방지 */
 }
 
 .main-header {
-    padding: 24px 40px 0 40px;
+  padding: 24px 40px 0 40px;
+  flex-shrink: 0; /* 헤더 높이가 줄어들지 않도록 고정 */
 }
 
 .main-header h1 {
@@ -25,8 +26,10 @@
 }
 
 .content-area {
-    flex-grow: 1;
-    padding: 24px 40px 40px 40px;
+  flex-grow: 1;
+  padding: 24px 40px 40px 40px;
+  overflow-y: auto; /* ✨ 스크롤이 필요한 경우 이 영역에서만 발생하도록 설정 */
+  min-height: 0; /* flex-grow가 제대로 작동하기 위해 필요 */
 }
 
 /* 사이드바가 접혔을 때의 스타일 */

@@ -129,13 +129,34 @@
 }
 
 .edit-form .save-edit-button {
-  background-color: #4C6EF5; /* 푸른색 계열로 변경 */
+  background-color: var(--primary-color);
   color: white;
-}
-.edit-form .save-edit-button:hover {
-  background-color: #0b5ed7;
 }
 
 .edit-form .cancel-edit-button {
   background-color: #e9ecef;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.reorder-button {
+  padding: 6px 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.reorder-button:hover {
+  background-color: var(--bg-color);
+  border-color: #adb5bd;
 }

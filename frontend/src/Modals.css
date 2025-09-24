@@ -307,3 +307,38 @@
   font-weight: 600;
   color: var(--primary-color);
 }
+
+/* --- 참여자 순서 편집 모달 (ParticipantOrderModal) --- */
+.participant-order-modal p {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+.participant-order-modal .order-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.participant-order-modal .order-list li {
+  padding: 12px 16px;
+  background-color: white;
+  border-bottom: 1px solid var(--border-color);
+  cursor: grab;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+.participant-order-modal .order-list li:last-child {
+  border-bottom: none;
+}
+.participant-order-modal .order-list li:hover {
+  background-color: var(--bg-color);
+}
+.participant-order-modal .order-list li span {
+  margin-right: 12px;
+  color: var(--text-secondary);
+  display: inline-block;
+  width: 20px;
+}

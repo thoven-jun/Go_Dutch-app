@@ -6,14 +6,6 @@
   display: flex;
   flex-direction: column; /* 아이템을 세로로 쌓음 */
 }
-
-.detail-header, .section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-}
 .detail-header {
   display: flex;
   justify-content: space-between;
@@ -22,33 +14,24 @@
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0; /* 헤더는 줄어들지 않음 */
 }
-.content-body {
-  padding: 30px 40px;
-  flex-grow: 1; /* 남은 공간을 모두 차지 */
-  overflow-y: auto; /* 내용이 넘치면 스크롤바 생성 */
-  display: flex;
-  flex-direction: column; /* 내부 섹션들을 세로로 쌓음 */
-  gap: 30px; /* 참여자와 지출 섹션 사이의 간격 */
+.detail-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5em;
 }
-.detail-section {
-  display: flex;
-  flex-direction: column;
-}
-.section-header {
+.detail-header, .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-bottom: 10px;
   margin-bottom: 10px;
 }
+
 .detail-title, .section-header h2 {
   margin: 0;
   color: var(--text-primary);
 }
-.section-header h2 {
-  font-size: 1.25em;
-  color: var(--text-secondary);
-}
+
 
 .settle-button, .manage-button {
   text-decoration: none;
@@ -70,6 +53,39 @@
 .settle-button:hover {
   background-color: var(--primary-color-light);
 }
+.content-body {
+  padding: 30px 40px;
+  flex-grow: 1;
+  overflow-y: hidden; /* ✨ content-body 전체의 스크롤은 막습니다. */
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  min-height: 0; /* ✨ flex-grow가 제대로 작동하기 위해 필요 */
+}
+.detail-section {
+  display: flex;
+  flex-direction: column;
+}
+.expense-section {
+  flex-grow: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-shrink: 0;
+}
+
+.section-header h2 {
+  font-size: 1.25em;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
 .manage-button {
   padding: 6px 12px;
   background-color: var(--bg-secondary-color);
@@ -89,17 +105,31 @@
   margin-bottom: 8px;
 }
 
-.expense-section {
-  flex-grow: 1;
-  min-height: 0; /* flex-grow가 제대로 작동하기 위해 필요 */
-}
 .expense-list {
   flex-grow: 1;
-  overflow-y: auto; /* 이 부분만 스크롤되도록 설정 */
+  overflow-y: auto; /* 이 영역만 스크롤됩니다. */
   list-style: none;
   padding: 0;
   margin: 0;
   padding-right: 10px; /* 스크롤바 공간 확보 */
+}
+/* ✨ [추가] 지출 내역 스크롤바 디자인 */
+.expense-list::-webkit-scrollbar {
+  width: 8px; /* 스크롤바의 너비 */
+}
+
+.expense-list::-webkit-scrollbar-track {
+  background: #f1f3f5; /* 스크롤바 배경 색상 */
+  border-radius: 4px;
+}
+
+.expense-list::-webkit-scrollbar-thumb {
+  background: #ced4da; /* 스크롤바 막대 색상 */
+  border-radius: 4px;
+}
+
+.expense-list::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd; /* 스크롤바 막대에 마우스를 올렸을 때 색상 */
 }
 .item-list li:not(.expense-item) {
   padding: 12px;
@@ -114,7 +144,7 @@
   padding: 15px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  margin-bottom: 12px; /* 항목 간 간격 */
+  margin-bottom: 8px; /* ✨ 변경: 여백을 줄여 촘촘하게 만듭니다. */
 }
 .expense-item-info {
   display: flex;
@@ -388,6 +418,7 @@
   border: 1px solid var(--border-color);
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   overflow: hidden; /* 애니메이션이 카드 밖으로 나가지 않도록 설정 (매우 중요!) */
+  flex-shrink: 0;
 }
 
 /* 2. 제목 부분(버튼) 스타일 */
@@ -444,6 +475,10 @@
     overflow: hidden; /* 자식 요소가 넘치지 않도록 설정 (매우 중요) */
     border-top: 1px solid transparent; /* 닫혔을 때는 투명한 선 */
 }
+/* ✨ [추가] 애니메이션을 비활성화하는 클래스 */
+.participant-list-container.no-transition {
+    transition: none;
+}
 .participant-list-container.expanded {
     max-height: 500px; /* 펼쳐졌을 때의 최대 높이 */
     border-top-color: var(--border-color); /* 열렸을 때만 선 색상 표시 */
@@ -462,4 +497,77 @@
 }
 .participant-section .item-list li:last-child {
   border-bottom: none;
+}
+
+.detail-footer {
+  padding: 15px 40px;
+  border-top: 1px solid var(--border-color);
+  background-color: #f8f9fa;
+  flex-shrink: 0; /* 푸터는 줄어들지 않음 */
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1em;
+}
+/* ✨ [추가] 정보 아이콘 관련 스타일 */
+.summary-label-group {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* '1인당 부담 금액'과 아이콘 사이의 간격 */
+}
+.summary-item:not(:last-child) {
+  margin-bottom: 8px;
+}
+.summary-item span {
+  color: var(--text-secondary);
+}
+.summary-item strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tooltip-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tooltip-container .info-icon {
+  color: var(--text-secondary);
+  cursor: help;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 150%; /* 아이콘 위에 위치 */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85em;
+  white-space: nowrap; /* 문구가 줄바꿈되지 않도록 설정 */
+  opacity: 0; /* 기본적으로 숨김 */
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  z-index: 10;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333 transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
 }
