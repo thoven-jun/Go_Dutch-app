@@ -10,7 +10,7 @@ const NewChatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill
 const SettingsIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> );
 const SidebarToggleIcon = ({ isCollapsed }) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="12" y1="3" x2="12" y2="21" /><line x1={isCollapsed ? "8" : "3"} y1={isCollapsed ? "12" : "12"} x2={isCollapsed ? "16" : "12"} y2={isCollapsed ? "12" : "12"} /></svg> );
 
-function ProjectItem({ project, onOpenRenameModal, onDeleteProject }) {
+function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobileSidebar }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
@@ -42,7 +42,7 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject }) {
 
   return (
     <li className="project-item">
-      <NavLink to={`/project/${project.id}`}>{project.name}</NavLink>
+      <NavLink to={`/project/${project.id}`} onClick={onCloseMobileSidebar}>{project.name}</NavLink>
       <div className="menu-container">
         <button className="kebab-menu-button" ref={buttonRef} onClick={handleMenuToggle}>
           <KebabMenuIcon />
@@ -62,7 +62,7 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject }) {
   );
 }
 
-function Sidebar({ projects, onAddProject, onOpenRenameModal, onDeleteProject, isCollapsed, onToggle, onOpenCreateProjectModal }) {
+function Sidebar({ projects, onAddProject, onOpenRenameModal, onDeleteProject, isCollapsed, onToggle, onOpenCreateProjectModal, onCloseMobileSidebar }) {
   return (
     <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
@@ -86,13 +86,15 @@ function Sidebar({ projects, onAddProject, onOpenRenameModal, onDeleteProject, i
                             project={project}
                             onOpenRenameModal={onOpenRenameModal}
                             onDeleteProject={onDeleteProject}
+                            onCloseMobileSidebar={onCloseMobileSidebar} // ✨ Prop 전달
                         />
                     ))}
                 </ul>
             </nav>
         </div>
         <div className="sidebar-footer">
-            <Link to="#" className="footer-link">
+            {/* ✨ [수정] Link 클릭 시 모바일 사이드바 닫기 함수 호출 */}
+            <Link to="#" className="footer-link" onClick={onCloseMobileSidebar}>
                 <SettingsIcon />
                 {!isCollapsed && <span className="footer-text">설정</span>}
             </Link>

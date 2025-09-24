@@ -468,3 +468,17 @@
 .full-split-view-modal .full-split-list::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 4px; }
 .full-split-view-modal .full-split-list::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
 .full-split-view-modal .full-split-list::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
+
+/* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+  .add-expense-modal .form-item-half {
+    width: 100%; /* 지출 추가 모달의 입력 필드를 한 줄에 하나씩 */
+  }
+  .participant-checkbox-list {
+    grid-template-columns: 1fr; /* 참여자 선택 목록을 1열로 변경 */
+  }
+}

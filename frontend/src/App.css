@@ -2,7 +2,8 @@
   display: flex;
   height: 100vh;
   background-color: #f8f9fa;
-  overflow: hidden; /* App 전체에서는 스크롤이 생기지 않도록 방지 */
+  overflow: hidden;
+  position: relative; /* 모바일 사이드바 위치 기준점 */
 }
 
 .main-content {
@@ -15,8 +16,11 @@
 }
 
 .main-header {
+  display: flex; /* 햄버거 메뉴와 제목을 나란히 놓기 위함 */
+  align-items: center;
+  gap: 16px;
   padding: 24px 40px 0 40px;
-  flex-shrink: 0; /* 헤더 높이가 줄어들지 않도록 고정 */
+  flex-shrink: 0;
 }
 
 .main-header h1 {
@@ -35,4 +39,45 @@
 /* 사이드바가 접혔을 때의 스타일 */
 .app-layout.sidebar-collapsed .sidebar {
   width: 80px; /* 아이콘만 보일 너비 */
+}
+
+/* ✨ [추가] 모바일용 햄버거 메뉴 버튼 */
+.hamburger-menu {
+  display: none; /* 데스크톱에서는 숨김 */
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.hamburger-menu:hover {
+  background-color: #e2e8f0;
+}
+
+/* ✨ [추가] 모바일용 오버레이 */
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
+/* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
+@media (max-width: 768px) {
+  .main-header {
+    padding: 16px 20px 0 20px;
+  }
+  .content-area {
+    padding: 16px 20px 20px 20px;
+  }
+  .hamburger-menu {
+    display: block; /* 모바일에서만 보임 */
+  }
+  .app-layout.mobile-sidebar-open .mobile-overlay {
+    display: block; /* 사이드바 열렸을 때 오버레이 표시 */
+  }
 }

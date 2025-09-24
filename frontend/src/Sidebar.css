@@ -226,3 +226,32 @@
 .sidebar.collapsed .footer-link {
     justify-content: center;
 }
+
+/* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
+@media (max-width: 768px) {
+  /* 평소에는 사이드바를 화면 왼쪽 밖으로 숨김 */
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100%;
+    z-index: 100;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+  }
+  
+  /* 데스크톱용 접기/펴기 버튼은 모바일에서 숨김 */
+  .sidebar-header .menu-toggle-button {
+    display: none;
+  }
+
+  /* mobile-sidebar-open 클래스가 추가되면 사이드바를 화면 안으로 표시 */
+  .app-layout.mobile-sidebar-open .sidebar {
+    left: 0;
+  }
+  
+  /* 데스크톱에서 사이드바가 접혔을 때의 스타일은 모바일에서 필요 없음 */
+  .app-layout.sidebar-collapsed .sidebar {
+    width: 280px;
+  }
+}

@@ -596,3 +596,23 @@
   opacity: 1;
   visibility: visible;
 }
+
+/* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
+@media (max-width: 768px) {
+  .detail-header {
+    padding: 20px;
+    flex-direction: column; /* 제목과 버튼을 세로로 배치 */
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .content-body {
+    padding: 20px;
+  }
+  .participant-section .participant-list-items {
+    grid-template-columns: 1fr; /* 참여자 목록을 1열로 변경 */
+    padding: 7px 15px 0px 15px;
+  }
+  .detail-footer {
+    padding: 15px 20px;
+  }
+}

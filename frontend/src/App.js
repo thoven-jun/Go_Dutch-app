@@ -14,8 +14,9 @@ import ParticipantManager from './ParticipantManager';
 import ParticipantOrderModal from './ParticipantOrderModal';
 import './App.css';
 
+const MenuIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg> );
+
 // ProjectDetailView Wrapper 수정
-// ✨ props에 participantListStates와 onToggleParticipants를 추가합니다.
 function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
   const { projectId } = useParams();
   const list = Array.isArray(projects) ? projects : Object.values(projects || {});
@@ -63,12 +64,13 @@ function AppContent() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [renameModalInfo, setRenameModalInfo] = useState({ isOpen: false, projectId: null, currentName: '' });
   const [duplicateModalInfo, setDuplicateModalInfo] = useState({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
-  const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertInfo, setAlertInfoparticipantListStates, setParticipantListState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   const [addExpenseModalInfo, setAddExpenseModalInfo] = useState({ isOpen: false, project: null });
   const [editExpenseModalInfo, setEditExpenseModalInfo] = useState({ isOpen: false, project: null, expense: null });
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [orderModalInfo, setOrderModalInfo] = useState({ isOpen: false, project: null });
   const [participantListStates, setParticipantListStates] = useState({});
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -238,7 +240,7 @@ function AppContent() {
 
   return (
     <>
-      <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${isMobileSidebarOpen ? 'mobile-sidebar-open' : ''}`}>
         <Sidebar
           projects={projects}
           onAddProject={handleCreateProject}
@@ -247,10 +249,17 @@ function AppContent() {
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onOpenCreateProjectModal={openCreateProjectModal}
+          onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
         />
         
         <main className="main-content">
-          <header className="main-header"><h1>Go Dutch</h1></header>
+          <header className="main-header">
+            {/* ✨ [추가] 모바일에서만 보이는 햄버거 메뉴 버튼 */}
+            <button className="hamburger-menu" onClick={() => setIsMobileSidebarOpen(true)}>
+              <MenuIcon />
+            </button>
+            <h1>Go Dutch</h1>
+          </header>
           <div className="content-area">
               <Routes>
                   <Route path="/" element={<Welcome />} />
@@ -289,6 +298,8 @@ function AppContent() {
                 </Routes>
           </div>
         </main>
+        
+        {isMobileSidebarOpen && <div className="mobile-overlay" onClick={() => setIsMobileSidebarOpen(false)}></div>}        
       </div>
 
       <RenameModal 
