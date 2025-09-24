@@ -600,10 +600,11 @@
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
   .detail-header {
-    padding: 20px;
-    flex-direction: column; /* 제목과 버튼을 세로로 배치 */
-    align-items: flex-start;
-    gap: 12px;
+    padding: 16px 20px;
+    /* ✨ [수정] 아래 3줄을 삭제하여 가로 정렬을 복원합니다. */
+    /* flex-direction: column; */
+    /* align-items: flex-start; */
+    /* gap: 12px; */
   }
   .content-body {
     padding: 20px;

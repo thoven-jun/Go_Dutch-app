@@ -298,8 +298,6 @@ function AppContent() {
                 </Routes>
           </div>
         </main>
-        
-        {isMobileSidebarOpen && <div className="mobile-overlay" onClick={() => setIsMobileSidebarOpen(false)}></div>}        
       </div>
 
       <RenameModal 
