@@ -225,15 +225,6 @@
 .add-expense-modal .form-group {
   position: relative;
 }
-
-.add-expense-modal .form-group label {
-  position: absolute;
-  top: 4px;
-  left: 12px;
-  font-size: 0.8em;
-  color: var(--primary-color);
-  z-index: 1;
-}
 .add-expense-modal .form-group label {
   position: absolute;
   top: 4px;
@@ -244,6 +235,9 @@
 }
 .add-expense-modal .form-group select {
   padding-top: 18px; /* label이 들어갈 공간 확보 */
+  text-align: right; /* 텍스트 오른쪽 정렬 */
+  padding-right: 35px; /* 화살표와 텍스트 간격 확보 */
+  text-overflow: ellipsis; /* 내용이 길면 ...으로 표시 */
 }
 .split-detail-row .lock-button {
   background: none;
