@@ -8,7 +8,6 @@ function SettlementResultView({ apiBaseUrl }) {
   const { projectId } = useParams();
 
   useEffect(() => {
-    // API 주소에서 '/api' 제거
     fetch(`${apiBaseUrl}/projects/${projectId}/settlement`)
       .then(res => {
         if (!res.ok) {

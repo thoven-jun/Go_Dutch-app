@@ -234,12 +234,16 @@
   color: var(--primary-color);
   z-index: 1;
 }
-
+.add-expense-modal .form-group label {
+  position: absolute;
+  top: 4px;
+  left: 12px;
+  font-size: 0.8em;
+  color: var(--primary-color);
+  z-index: 1;
+}
 .add-expense-modal .form-group select {
-  padding-top: 9px;
-  text-align: right;
-  padding-right: 15px;
-  cursor: pointer;
+  padding-top: 18px; /* label이 들어갈 공간 확보 */
 }
 .split-detail-row .lock-button {
   background: none;

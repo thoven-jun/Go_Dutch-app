@@ -250,8 +250,37 @@ useEffect(() => {
             </>
           )}
 
-          {splitMethod === 'amount' && null /* 금액 지정 UI */ }
-          {splitMethod === 'percentage' && null /* 비율 지정 UI */ }
+          {(splitMethod === 'amount' || splitMethod === 'percentage') && (
+    <div className="form-item-full split-details-section">
+      <h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4>
+      {participants.map(p => (
+        <div key={p.id} className="split-detail-row">
+          <label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label>
+          <div className="input-with-unit">
+            <input
+              id={`split-detail-edit-${p.id}`}
+              type="text"
+              value={splitDetailStrings[p.id] || ''}
+              onChange={e => handleSplitDetailChange(p.id, e.target.value)}
+              onBlur={() => handleSplitDetailBlur(p.id)}
+              placeholder="0"
+              inputMode="numeric"
+              disabled={lockedParticipants.has(p.id)}
+            />
+            <span>{splitMethod === 'amount' ? '원' : '%'}</span>
+          </div>
+          <button
+            type="button"
+            className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`}
+            onClick={() => toggleLock(p.id)}
+            title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}
+          >
+            <LockIcon isLocked={lockedParticipants.has(p.id)} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
         </div>
         <div className="modal-footer">{validationError && <p className="error-message">{validationError}</p>}<div className="modal-buttons"><button type="button" className="cancel-button" onClick={onClose}>취소</button><button type="button" className="confirm-button" onClick={handleSaveExpense}>저장</button></div></div>
       </div>
