@@ -26,27 +26,36 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const setDefaultSplits = useCallback((method) => {
     const totalAmount = unformatNumber(amount);
     if ((method === 'amount' && !totalAmount) || participants.length === 0) {
-        setSplitDetails({}); setSplitDetailStrings({}); return;
-    };
+      setSplitDetails({}); setSplitDetailStrings({}); return;
+    }
     let newDetails = {};
     let newDetailStrings = {};
+
     if (method === 'amount') {
       const baseAmount = Math.floor(totalAmount / participants.length);
-      let remainder = totalAmount % participants.length;
-      const targetId = payerId ? Number(payerId) : (participants[0]?.id || null);
-      participants.forEach(p => { newDetails[p.id] = baseAmount; });
-      if (targetId && newDetails[targetId] !== undefined) { newDetails[targetId] += remainder; }
-      participants.forEach(p => { newDetailStrings[p.id] = formatNumber(newDetails[p.id]); });
+      const remainder = totalAmount % participants.length;
+      
+      participants.forEach((p, index) => {
+        // 나머지 값을 앞 순서의 참여자들에게 1원씩 분배
+        newDetails[p.id] = baseAmount + (index < remainder ? 1 : 0);
+        newDetailStrings[p.id] = formatNumber(newDetails[p.id]);
+      });
+
     } else if (method === 'percentage') {
-      const basePercentage = 100 / participants.length;
-      participants.forEach(p => { 
-          newDetails[p.id] = basePercentage;
-          newDetailStrings[p.id] = basePercentage.toFixed(1).replace(/\.0$/, '');
+      // ✨ [수정] 비율 나머지 분배 로직
+      const basePercentage = Math.floor(100 / participants.length);
+      const remainder = 100 % participants.length;
+
+      participants.forEach((p, index) => {
+        // 나머지 %를 앞 순서의 참여자들에게 1%씩 분배
+        const finalPercentage = basePercentage + (index < remainder ? 1 : 0);
+        newDetails[p.id] = finalPercentage;
+        newDetailStrings[p.id] = String(finalPercentage);
       });
     }
     setSplitDetails(newDetails);
     setSplitDetailStrings(newDetailStrings);
-  }, [amount, participants, payerId]);
+  }, [amount, participants]); // payerId는 더 이상 의존하지 않으므로 배열에서 제거
 
   const rebalancePercentages = useCallback((updatedDetails, focusedParticipantId = null) => {
     const unlockedParticipants = participants.filter(p => !lockedParticipants.has(p.id) && p.id !== focusedParticipantId);
