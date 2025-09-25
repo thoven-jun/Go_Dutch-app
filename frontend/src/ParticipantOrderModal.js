@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl }) {
   const [participants, setParticipants] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  
+  // 드래그앤드롭을 위한 Ref
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
+
+  // ✨ [핵심 수정] 모바일 환경(터치 가능 기기)인지 확인
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   useEffect(() => {
     if (isOpen && project?.participants) {
-      // orderIndex를 기준으로 정렬하여 초기 상태 설정
       const sortedParticipants = [...project.participants].sort((a, b) => a.orderIndex - b.orderIndex);
       setParticipants(sortedParticipants);
+      setSelectedId(null);
     }
   }, [isOpen, project]);
 
@@ -20,25 +28,37 @@ function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl })
     })
     .then(res => {
       if (!res.ok) throw new Error('Failed to save order');
-      onSave(); // 부모 컴포넌트에 저장 완료 알림
+      onSave();
       onClose();
     })
     .catch(error => console.error("Error saving participant order:", error));
   };
 
-  // 임시 드래그 앤 드롭 핸들러 (라이브러리 없이 단순 구현)
-  const handleDragStart = (e, index) => {
-    e.dataTransfer.setData("draggedIndex", index);
+  // --- 모바일용: 탭(클릭) 이벤트 핸들러 ---
+  const handleItemTap = (tappedIndex) => {
+    if (selectedId === null) {
+      setSelectedId(participants[tappedIndex].id);
+    } else {
+      const selectedParticipant = participants.find(p => p.id === selectedId);
+      if (selectedParticipant && selectedParticipant.id === participants[tappedIndex].id) {
+        setSelectedId(null);
+        return;
+      }
+      const items = participants.filter(p => p.id !== selectedId);
+      items.splice(tappedIndex, 0, selectedParticipant);
+      setParticipants(items);
+      setSelectedId(null);
+    }
   };
 
-  const handleDrop = (e, dropIndex) => {
-    const draggedIndex = e.dataTransfer.getData("draggedIndex");
-    if (draggedIndex === null) return;
-
-    const items = [...participants];
-    const [reorderedItem] = items.splice(draggedIndex, 1);
-    items.splice(dropIndex, 0, reorderedItem);
-    setParticipants(items);
+  // --- 데스크탑용: 드래그앤드롭 정렬 핸들러 ---
+  const handleDragSort = () => {
+    let _participants = [...participants];
+    const draggedItemContent = _participants.splice(dragItem.current, 1)[0];
+    _participants.splice(dragOverItem.current, 0, draggedItemContent);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setParticipants(_participants);
   };
   
   if (!isOpen) return null;
@@ -47,19 +67,35 @@ function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl })
     <div className="modal-overlay">
       <div className="modal-content participant-order-modal">
         <h2>참여자 순서 편집</h2>
-        <p>참여자를 드래그하여 순서를 변경하세요.</p>
+        {/* ✨ [수정] 환경에 따라 다른 안내 메시지 표시 */}
+        <p>{isMobile ? 
+            (selectedId === null ? '이동할 참여자를 선택하세요.' : '참여자를 이동시킬 위치를 선택하세요.') : 
+            '참여자를 드래그하여 순서를 변경하세요.'}
+        </p>
         <ul className="order-list">
-          {participants.map((p, index) => (
-            <li
-              key={p.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => handleDrop(e, index)}
-            >
-              <span>☰</span> {p.name}
-            </li>
-          ))}
+          {participants.map((p, index) => {
+            // ✨ [핵심 수정] 환경에 따라 다른 이벤트 핸들러를 li 요소에 부여
+            const desktopEvents = {
+              draggable: true,
+              onDragStart: () => (dragItem.current = index),
+              onDragEnter: () => (dragOverItem.current = index),
+              onDragEnd: handleDragSort,
+              onDragOver: (e) => e.preventDefault(),
+            };
+            const mobileEvents = {
+              onClick: () => handleItemTap(index),
+            };
+
+            return (
+              <li
+                key={p.id}
+                className={selectedId === p.id ? 'selected' : ''}
+                {...(isMobile ? mobileEvents : desktopEvents)} // 환경에 맞는 이벤트 객체를 적용
+              >
+                <span>{isMobile ? (selectedId === p.id ? '◉' : '○') : '☰'}</span> {p.name}
+              </li>
+            );
+          })}
         </ul>
         <div className="modal-footer">
           <div className="modal-buttons">

@@ -64,7 +64,7 @@ function AppContent() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [renameModalInfo, setRenameModalInfo] = useState({ isOpen: false, projectId: null, currentName: '' });
   const [duplicateModalInfo, setDuplicateModalInfo] = useState({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
-  const [alertInfo, setAlertInfoparticipantListStates, setParticipantListState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   const [addExpenseModalInfo, setAddExpenseModalInfo] = useState({ isOpen: false, project: null });
   const [editExpenseModalInfo, setEditExpenseModalInfo] = useState({ isOpen: false, project: null, expense: null });
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);

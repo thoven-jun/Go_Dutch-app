@@ -255,7 +255,7 @@
   justify-content: flex-end; /* 버튼들을 오른쪽 끝으로 정렬 */
   align-items: center;
   width: 100%;
-  margin-top: 24px;
+  margin-top: 12px;
   min-height: 40px; /* 버튼의 높이만큼 최소 높이를 확보하여, 메시지가 없을 때도 레이아웃이 안정적으로 유지되도록 함 */
 }
 .create-project-modal .error-message {
@@ -277,6 +277,7 @@
   border-color: #e53e3e;
   box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.2); /* 포커스 시에도 붉은색 유지 */
 }
+
 
 /* --- 지출 추가/수정 모달의 form-group 스타일 --- */
 .add-expense-modal .form-group {
@@ -469,6 +470,146 @@
 .full-split-view-modal .full-split-list::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
 .full-split-view-modal .full-split-list::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
 
+/* --- 프로젝트 생성 모달 참여자 목록 스크롤 --- */
+.create-project-modal .participant-list-container {
+  max-height: 220px; /* 약 5개 항목을 표시할 수 있는 높이 */
+  overflow-y: auto;  /* 내용이 넘칠 경우 세로 스크롤바 표시 */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 4px; /* '참여자' 라벨과의 간격 */
+  margin-bottom: 8px; /* '참여자 추가' 버튼과의 간격 */
+  background-color: var(--bg-color);
+}
+
+/* 참여자 입력 행의 하단 마진 조정 (스크롤 영역 내부 간격) */
+.create-project-modal .participant-list-container .participant-input-row {
+  margin-bottom: 10px;
+}
+.create-project-modal .participant-list-container .participant-input-row:last-child {
+  margin-bottom: 0;
+}
+
+/* 스크롤바 디자인 (다른 모달과 통일) */
+.create-project-modal .participant-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* 1. 참여자 레이블과 전체보기 버튼을 한 줄에 배치 */
+.create-project-modal .form-label-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px; /* 참여자 목록과의 간격 */
+}
+.create-project-modal .form-label-header label {
+  margin-bottom: 0; /* label의 기본 마진 제거 */
+}
+.create-project-modal .view-all-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* 2. 참여자 추가 버튼의 상단 여백을 줄여 공간 낭비 해소 */
+.create-project-modal .add-participant-btn {
+  margin-top: 8px; /* 4px -> 8px로 조정하여 스크롤 영역과의 간격 확보 */
+}
+.create-project-modal .form-group.participant-form-group {
+  margin-bottom: 12px; /* 하단 버튼과의 간격을 12px로 줄임 */
+}
+
+/* 3. 전체보기 모달 및 드래그 아이템 스타일 */
+.participant-full-view .modal-footer {
+  justify-content: space-between; /* 추가 버튼은 왼쪽, 완료 버튼은 오른쪽 */
+}
+
+.participant-full-view .draggable-item {
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.participant-full-view .draggable-item span {
+  color: var(--text-secondary);
+}
+.participant-full-view .draggable-item input {
+  flex-grow: 1;
+}
+
+/* --- 참여자 전체보기 모달 UI 개선 --- */
+.participant-full-view .participant-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.participant-full-view .draggable-item {
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.participant-full-view .draggable-item:hover {
+  background-color: var(--bg-color);
+}
+
+.participant-full-view .draggable-item span {
+  cursor: grab;
+  color: var(--text-secondary);
+}
+
+.participant-full-view .participant-input-row input {
+  flex-grow: 1;
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.participant-full-view .remove-participant-btn {
+  border: none;
+  background: none;
+  font-size: 1.5em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 8px;
+}
+
+.participant-full-view .modal-footer {
+  justify-content: space-between;
+}
+
+.participant-full-view .add-participant-btn {
+  border: none;
+  background: none;
+  font-size: 0.9em;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 4px;
+  font-weight: 500;
+}
+
+
+
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
   .modal-content {
@@ -540,6 +681,14 @@
   
   .add-expense-modal .split-detail-row .lock-button {
     flex-shrink: 0;
+  }
+
+  .create-project-modal .form-group {
+    margin-bottom: 12px;
+  }
+
+  .participant-full-view .participant-input-row {
+    margin-bottom: 8px;
   }
 }
 

@@ -11,49 +11,63 @@ const SettingsIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fil
 const SidebarToggleIcon = ({ isCollapsed }) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="12" y1="3" x2="12" y2="21" /><line x1={isCollapsed ? "8" : "3"} y1={isCollapsed ? "12" : "12"} x2={isCollapsed ? "16" : "12"} y2={isCollapsed ? "12" : "12"} /></svg> );
 const CloseIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> );
 
-function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobileSidebar }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobileSidebar, isMenuOpen, setOpenMenuId }) {
   const menuRef = useRef(null);
-  const buttonRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target) &&
-          buttonRef.current && !buttonRef.current.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuRef, buttonRef]);
+  const showMenu = (e, isKebabClick = false) => {
+     e.preventDefault();
+     e.stopPropagation();
+     
+     const menuWidth = 140;
+     const screenWidth = window.innerWidth;
+     const margin = 16;
 
-  const handleMenuToggle = () => {
-    if (!isMenuOpen) {
-      if (buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect();
-        setMenuStyle({
-          top: `${rect.top}px`,
-          left: `${rect.right + 8}px`,
-        });
-      }
-    }
-    setIsMenuOpen(!isMenuOpen);
-  };
+     let x, y;
+
+     if (isKebabClick) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        x = rect.left;
+        y = rect.bottom;
+     } else {
+        const touch = e.touches ? e.touches[0] : null;
+        x = touch ? touch.clientX : e.clientX;
+        y = touch ? touch.clientY : e.clientY;
+     }
+     
+     if (x + menuWidth > screenWidth) {
+        x = screenWidth - menuWidth - margin;
+     }
+
+     setMenuStyle({
+        top: `${y}px`,
+        left: `${x}px`,
+     });
+     
+     setOpenMenuId(isMenuOpen ? null : project.id);
+  }
 
   return (
+    // ✨ [수정] li 태그에서 이벤트 핸들러 제거
     <li className="project-item">
-      <NavLink to={`/project/${project.id}`} onClick={onCloseMobileSidebar}>{project.name}</NavLink>
+      {/* ✨ [수정] onContextMenu 이벤트를 a 태그로 다시 이동 */}
+      <NavLink 
+        to={`/project/${project.id}`} 
+        onClick={onCloseMobileSidebar}
+        onContextMenu={showMenu}
+      >
+        {project.name}
+      </NavLink>
       <div className="menu-container">
-        <button className="kebab-menu-button" ref={buttonRef} onClick={handleMenuToggle}>
+        <button className="kebab-menu-button" onClick={(e) => showMenu(e, true)}>
           <KebabMenuIcon />
         </button>
         {isMenuOpen && (
           <div className="dropdown-menu" ref={menuRef} style={menuStyle}>
-            <button onClick={() => { onOpenRenameModal(project.id, project.name); setIsMenuOpen(false); }}>
+            <button onClick={() => { onOpenRenameModal(project.id, project.name); setOpenMenuId(null); }}>
               <EditIcon /> 이름 변경
             </button>
-            <button onClick={() => { onDeleteProject(project.id); setIsMenuOpen(false); }}>
+            <button onClick={() => { onDeleteProject(project.id); setOpenMenuId(null); }}>
               <DeleteIcon /> 삭제
             </button>
           </div>
@@ -63,24 +77,37 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
   );
 }
 
-function Sidebar({ projects, onAddProject, onOpenRenameModal, onDeleteProject, isCollapsed, onToggle, onOpenCreateProjectModal, onCloseMobileSidebar }) {
+
+function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, onToggle, onOpenCreateProjectModal, onCloseMobileSidebar }) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.menu-container') && !e.target.closest('.dropdown-menu')) {
+        setOpenMenuId(null);
+      }
+    };
+    if (openMenuId !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenuId]);
+
   return (
     <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-        {/* ✨ 데스크톱용 헤더 */}
         <div className="sidebar-header desktop-header">
             <button onClick={onToggle} className="menu-toggle-button">
                 <SidebarToggleIcon isCollapsed={isCollapsed} />
             </button>
         </div>
-
-        {/* ✨ [추가] 모바일용 헤더 */}
         <div className="sidebar-header mobile-header">
             <h1 className="mobile-sidebar-title">Go Dutch</h1>
             <button onClick={onCloseMobileSidebar} className="menu-toggle-button">
                 <CloseIcon />
             </button>
         </div>
-        
         <div className="sidebar-content">
             <div className="new-project-section">
                 <button className="new-project-button" onClick={onOpenCreateProjectModal}>
@@ -97,14 +124,15 @@ function Sidebar({ projects, onAddProject, onOpenRenameModal, onDeleteProject, i
                             project={project}
                             onOpenRenameModal={onOpenRenameModal}
                             onDeleteProject={onDeleteProject}
-                            onCloseMobileSidebar={onCloseMobileSidebar} // ✨ Prop 전달
+                            onCloseMobileSidebar={onCloseMobileSidebar}
+                            isMenuOpen={openMenuId === project.id}
+                            setOpenMenuId={setOpenMenuId}
                         />
                     ))}
                 </ul>
             </nav>
         </div>
         <div className="sidebar-footer">
-            {/* ✨ [수정] Link 클릭 시 모바일 사이드바 닫기 함수 호출 */}
             <Link to="#" className="footer-link" onClick={onCloseMobileSidebar}>
                 <SettingsIcon />
                 {!isCollapsed && <span className="footer-text">설정</span>}
