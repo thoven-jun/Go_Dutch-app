@@ -72,6 +72,9 @@ function AppContent() {
   const [participantListStates, setParticipantListStates] = useState({});
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedProjects, setSelectedProjects] = useState(new Set());
+
   const navigate = useNavigate();
 
   const handleToggleParticipants = (projectId) => {
@@ -238,6 +241,50 @@ function AppContent() {
     }).catch(error => console.error("Failed to update expense:", error));
   };
 
+  // ✨ [2/4] 선택된 프로젝트를 토글하는 핸들러
+  const handleProjectSelect = (projectId) => {
+    setSelectedProjects(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      if (newSelected.has(projectId)) {
+        newSelected.delete(projectId);
+      } else {
+        newSelected.add(projectId);
+      }
+      return newSelected;
+    });
+  };
+
+  // ✨ [3/4] 선택 모드를 활성화/비활성화하고 선택 목록을 초기화하는 함수
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(prev => !prev);
+    setSelectedProjects(new Set()); // 모드를 바꿀 때 선택 상태 초기화
+  };
+
+  // ✨ [4/4] 선택된 프로젝트들을 일괄 삭제하는 함수
+  const handleBulkDelete = () => {
+    showAlert(
+      `${selectedProjects.size}개 항목 삭제`,
+      '선택한 모든 프로젝트와 관련 데이터를 영구적으로 삭제하시겠습니까?',
+      () => {
+        const deletePromises = Array.from(selectedProjects).map(projectId =>
+          fetch(`${apiBaseUrl}/projects/${projectId}`, { method: 'DELETE' })
+        );
+
+        Promise.all(deletePromises)
+          .then(() => {
+            fetchProjects();
+            toggleSelectionMode(); // 삭제 후 선택 모드 종료
+            navigate('/');
+            closeAlert();
+          })
+          .catch(err => {
+            console.error('Failed to delete projects:', err);
+            closeAlert();
+          });
+      }
+    );
+  };  
+
   return (
     <>
       <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${isMobileSidebarOpen ? 'mobile-sidebar-open' : ''}`}>
@@ -250,6 +297,11 @@ function AppContent() {
           onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onOpenCreateProjectModal={openCreateProjectModal}
           onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
+          isSelectionMode={isSelectionMode}
+          selectedProjects={selectedProjects}
+          onToggleSelectionMode={toggleSelectionMode}
+          onProjectSelect={handleProjectSelect}
+          onBulkDelete={handleBulkDelete}
         />
         
         <main className="main-content">

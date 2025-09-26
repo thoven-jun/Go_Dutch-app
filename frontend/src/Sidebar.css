@@ -35,7 +35,8 @@
 
 .sidebar-content {
     flex-grow: 1;
-    overflow-y: auto; /* 스크롤 기능 유지 */
+    overflow-y: auto;
+    min-height: 0; /* ✨ [추가] flex 레이아웃이 올바르게 계산되도록 합니다. */
 }
 
 .new-project-section {
@@ -193,7 +194,7 @@
 
 .sidebar-footer {
     padding: 16px;
-    margin-top: auto;
+    flex-shrink: 0;       /* ✨ [추가] 푸터 영역이 줄어들지 않도록 합니다. */
 }
 .footer-link {
     display: flex;
@@ -208,7 +209,6 @@
 .footer-link:hover {
     background-color: #e2e8f0;
 }
-
 
 /* --- 사이드바가 접혔을 때의 스타일 --- */
 .sidebar.collapsed {
@@ -241,6 +241,90 @@
   font-size: 1.25em;
   color: var(--text-primary);
   margin: 0;
+}
+
+/* --- 프로젝트 선택 기능 관련 스타일 --- */
+.project-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.selection-mode-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.project-item.selected a {
+  background-color: var(--accent-color-light);
+}
+
+.selection-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #adb5bd;
+  border-radius: 50%;
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.project-item.selected .selection-checkbox {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+.selection-checkbox svg {
+  width: 16px;
+  height: 16px;
+}
+.project-item .selection-checkbox + a {
+  padding-left: 12px;
+}
+
+/* --- 액션 바 스타일 --- */
+.selection-action-bar {
+  flex-shrink: 0;
+  padding: 16px;
+  background-color: white;
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  margin: 10px;  
+}
+.selection-count {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: block;
+}
+.selection-actions {
+  display: flex;
+  gap: 10px;
+}
+.selection-actions button {
+  flex-grow: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
+}
+.action-button-delete {
+  background-color: #ffe3e3;
+  color: #c53030;
+}
+.action-button-archive {
+  background-color: var(--bg-secondary-color);
+  color: var(--text-secondary);
 }
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
@@ -279,5 +363,12 @@
   /* ✨ 케밥 메뉴 버튼을 모바일에서 숨김 */
   .project-item .kebab-menu-button {
     display: none;
+  }
+  .selection-action-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border-radius: 20px 20px 0 0;
   }
 }

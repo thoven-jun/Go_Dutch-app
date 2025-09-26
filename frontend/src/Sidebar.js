@@ -10,10 +10,12 @@ const NewChatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill
 const SettingsIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> );
 const SidebarToggleIcon = ({ isCollapsed }) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="12" y1="3" x2="12" y2="21" /><line x1={isCollapsed ? "8" : "3"} y1={isCollapsed ? "12" : "12"} x2={isCollapsed ? "16" : "12"} y2={isCollapsed ? "12" : "12"} /></svg> );
 const CloseIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> );
+const ArchiveIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg> );
 
-function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobileSidebar, isMenuOpen, setOpenMenuId }) {
+function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobileSidebar, isMenuOpen, setOpenMenuId, isSelectionMode, selectedProjects, onProjectSelect }) {
   const menuRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
+  const isSelected = selectedProjects.has(project.id);
 
   const showMenu = (e, isKebabClick = false) => {
      e.preventDefault();
@@ -22,13 +24,11 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
      const menuWidth = 140;
      const screenWidth = window.innerWidth;
      const margin = 16;
-
      let x, y;
 
      if (isKebabClick) {
         const rect = e.currentTarget.getBoundingClientRect();
-        x = rect.left;
-        y = rect.bottom;
+        x = rect.left; y = rect.bottom;
      } else {
         const touch = e.touches ? e.touches[0] : null;
         x = touch ? touch.clientX : e.clientX;
@@ -38,47 +38,69 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
      if (x + menuWidth > screenWidth) {
         x = screenWidth - menuWidth - margin;
      }
-
-     setMenuStyle({
-        top: `${y}px`,
-        left: `${x}px`,
-     });
-     
-     setOpenMenuId(isMenuOpen ? null : project.id);
+     setMenuStyle({ top: `${y}px`, left: `${x}px` });
+     setOpenMenuId(project.id === isMenuOpen ? null : project.id);
   }
 
+  // ✨ [수정] 항목 클릭/탭 핸들러
+  const handleItemClick = (e) => {
+    if (isSelectionMode) {
+      e.preventDefault(); // 선택 모드에서는 링크 이동 방지
+      onProjectSelect(project.id);
+    } else {
+      onCloseMobileSidebar();
+    }
+  };
+
+  // ✨ [수정] 꾹 누르기/우클릭 핸들러
+  const handleContextMenu = (e) => {
+    // 선택 모드가 아닐 때만 보조 메뉴를 띄움
+    if (!isSelectionMode) {
+      showMenu(e);
+    } else {
+      e.preventDefault(); // 선택 모드에서는 기본 메뉴 방지
+    }
+  };
+
   return (
-    // ✨ [수정] li 태그에서 이벤트 핸들러 제거
-    <li className="project-item">
-      {/* ✨ [수정] onContextMenu 이벤트를 a 태그로 다시 이동 */}
-      <NavLink 
-        to={`/project/${project.id}`} 
-        onClick={onCloseMobileSidebar}
-        onContextMenu={showMenu}
-      >
+    <li className={`project-item ${isSelected ? 'selected' : ''}`}>
+      {isSelectionMode && (
+        <div className="selection-checkbox" onClick={(e) => { e.stopPropagation(); onProjectSelect(project.id); }}>
+          {/* SVG 체크 아이콘 */}
+          {isSelected && <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>}
+        </div>
+      )}
+      <NavLink to={`/project/${project.id}`} onClick={handleItemClick} onContextMenu={handleContextMenu}>
         {project.name}
       </NavLink>
-      <div className="menu-container">
-        <button className="kebab-menu-button" onClick={(e) => showMenu(e, true)}>
-          <KebabMenuIcon />
-        </button>
-        {isMenuOpen && (
-          <div className="dropdown-menu" ref={menuRef} style={menuStyle}>
-            <button onClick={() => { onOpenRenameModal(project.id, project.name); setOpenMenuId(null); }}>
-              <EditIcon /> 이름 변경
-            </button>
-            <button onClick={() => { onDeleteProject(project.id); setOpenMenuId(null); }}>
-              <DeleteIcon /> 삭제
-            </button>
-          </div>
-        )}
-      </div>
+
+      {/* ✨ [수정] 선택 모드가 아닐 때만 케밥 메뉴 버튼 표시 */}
+      {!isSelectionMode && (
+        <div className="menu-container">
+          <button className="kebab-menu-button" onClick={(e) => showMenu(e, true)}>
+            <KebabMenuIcon />
+          </button>
+          {isMenuOpen && (
+            <div className="dropdown-menu" ref={menuRef} style={menuStyle}>
+              <button onClick={() => { onOpenRenameModal(project.id, project.name); setOpenMenuId(null); }}>
+                <EditIcon /> 이름 변경
+              </button>
+              <button onClick={() => { /* 기능은 추후 추가 */ setOpenMenuId(null); }}>
+                <ArchiveIcon /> 보관
+              </button>
+              <button onClick={() => { onDeleteProject(project.id); setOpenMenuId(null); }}>
+                <DeleteIcon /> 삭제
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </li>
   );
 }
 
 
-function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, onToggle, onOpenCreateProjectModal, onCloseMobileSidebar }) {
+function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, onToggle, onOpenCreateProjectModal, onCloseMobileSidebar, isSelectionMode, selectedProjects, onToggleSelectionMode, onProjectSelect, onBulkDelete }) {
   const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
@@ -90,9 +112,7 @@ function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, on
     if (openMenuId !== null) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => { document.removeEventListener("mousedown", handleClickOutside); };
   }, [openMenuId]);
 
   return (
@@ -116,7 +136,12 @@ function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, on
                 </button>
             </div>
             <nav className="project-nav">
-                {!isCollapsed && <div className="project-nav-header">최근 항목</div>}
+                <div className="project-nav-header">
+                {!isCollapsed && <span>최근 항목</span>}
+                  <button className="selection-mode-button" onClick={onToggleSelectionMode}>
+                    {isSelectionMode ? '완료' : '선택'}
+                  </button>
+                </div>
                 <ul>
                     {(Array.isArray(projects) ? projects : Object.values(projects || {})).map(project => (
                         <ProjectItem
@@ -127,16 +152,30 @@ function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, on
                             onCloseMobileSidebar={onCloseMobileSidebar}
                             isMenuOpen={openMenuId === project.id}
                             setOpenMenuId={setOpenMenuId}
+                            isSelectionMode={isSelectionMode}
+                            selectedProjects={selectedProjects}
+                            onProjectSelect={onProjectSelect}
                         />
                     ))}
                 </ul>
             </nav>
         </div>
+
+        {selectedProjects.size > 0 && (
+          <div className="selection-action-bar">
+            <span className="selection-count">{selectedProjects.size}개 선택됨</span>
+            <div className="selection-actions">
+              <button className="action-button-delete" onClick={onBulkDelete}>삭제</button>
+              <button className="action-button-archive">보관</button>
+            </div>
+          </div>
+        )}
+
         <div className="sidebar-footer">
-            <Link to="#" className="footer-link" onClick={onCloseMobileSidebar}>
-                <SettingsIcon />
-                {!isCollapsed && <span className="footer-text">설정</span>}
-            </Link>
+          <Link to="#" className="footer-link" onClick={onCloseMobileSidebar}>
+            <SettingsIcon />
+            {!isCollapsed && <span className="footer-text">설정</span>}
+          </Link>
         </div>
     </div>
   );
