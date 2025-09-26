@@ -16,6 +16,11 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
   const menuRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
   const isSelected = selectedProjects.has(project.id);
+  
+  // ✨ [1/3] 롱 프레스를 위한 타이머와 터치 위치를 저장할 ref 추가
+  const longPressTimer = useRef();
+  const touchCoords = useRef({ x: 0, y: 0 });
+  const isLongPress = useRef(false);
 
   const showMenu = (e, isKebabClick = false) => {
      e.preventDefault();
@@ -27,29 +32,58 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
      let x, y;
 
      if (isKebabClick) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        x = rect.left; y = rect.bottom;
-     } else {
-        const touch = e.touches ? e.touches[0] : null;
-        x = touch ? touch.clientX : e.clientX;
-        y = touch ? touch.clientY : e.clientY;
-     }
+      const rect = e.currentTarget.getBoundingClientRect();
+      x = rect.left; y = rect.bottom;
+    } else {
+      // 롱 프레스 시 저장해둔 터치 좌표를 사용
+      x = touchCoords.current.x;
+      y = touchCoords.current.y;
+    }
      
      if (x + menuWidth > screenWidth) {
-        x = screenWidth - menuWidth - margin;
-     }
-     setMenuStyle({ top: `${y}px`, left: `${x}px` });
-     setOpenMenuId(project.id === isMenuOpen ? null : project.id);
-  }
+      x = screenWidth - menuWidth - margin;
+    }
+    setMenuStyle({ top: `${y}px`, left: `${x}px` });
+    setOpenMenuId(project.id);
+  };
 
   // ✨ [수정] 항목 클릭/탭 핸들러
   const handleItemClick = (e) => {
     if (isSelectionMode) {
-      e.preventDefault(); // 선택 모드에서는 링크 이동 방지
+      e.preventDefault();
       onProjectSelect(project.id);
     } else {
+      // ✨ 롱 프레스 후 손가락을 뗄 때 링크 이동을 막음
+      if (isLongPress.current) {
+        e.preventDefault();
+        isLongPress.current = false; // 플래그 초기화
+        return;
+      }
       onCloseMobileSidebar();
     }
+  };
+
+  // ✨ [2/3] 롱 프레스를 감지하는 터치 이벤트 핸들러 추가
+  const handleTouchStart = (e) => {
+    if (isSelectionMode) return; // 선택 모드에서는 작동 안 함
+
+    // 터치 시작 위치 저장
+    touchCoords.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    isLongPress.current = false;
+    
+    longPressTimer.current = setTimeout(() => {
+      isLongPress.current = true; // 롱 프레스로 판정
+      showMenu(e);
+    }, 500); // 500ms (0.5초)
+  };
+
+  const handleTouchEnd = () => {
+    clearTimeout(longPressTimer.current);
+  };
+  
+  // 스크롤 시 롱 프레스 취소
+  const handleTouchMove = () => {
+      clearTimeout(longPressTimer.current);
   };
 
   // ✨ [수정] 꾹 누르기/우클릭 핸들러
@@ -66,11 +100,21 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
     <li className={`project-item ${isSelected ? 'selected' : ''}`}>
       {isSelectionMode && (
         <div className="selection-checkbox" onClick={(e) => { e.stopPropagation(); onProjectSelect(project.id); }}>
-          {/* SVG 체크 아이콘 */}
           {isSelected && <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>}
         </div>
       )}
-      <NavLink to={`/project/${project.id}`} onClick={handleItemClick} onContextMenu={handleContextMenu}>
+      <NavLink 
+        to={`/project/${project.id}`} 
+        onClick={handleItemClick}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        // 데스크탑 우클릭을 위해 onContextMenu는 유지
+        onContextMenu={(e) => {
+            touchCoords.current = { x: e.clientX, y: e.clientY };
+            showMenu(e);
+        }}
+      >
         {project.name}
       </NavLink>
 
