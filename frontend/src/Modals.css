@@ -309,6 +309,7 @@
 .add-expense-modal .form-group select {
   padding: 7px 35px 6px 12px; /* 상(label 공간), 우(화살표 공간), 하, 좌 여백 */
   text-align: right;
+  text-align-last: right; /* ✨ [추가] 선택된 옵션의 텍스트를 오른쪽으로 강제 정렬합니다. */
   text-overflow: ellipsis;
   -webkit-appearance: none; /* iOS 기본 스타일 제거 */
   -moz-appearance: none; /* Firefox 기본 스타일 제거 */
