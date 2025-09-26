@@ -104,7 +104,7 @@
 
 .add-expense-modal .split-method-selector {
   width: 100%; display: flex; background-color: var(--bg-secondary-color);
-  border-radius: 8px; padding: 4px; box-sizing: border-box;
+  border-radius: 8px; padding: 4px; box-sizing: border-box; margin: 4px 0px 8px 0px;
 }
 .add-expense-modal .split-method-selector button {
   flex: 1; padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;
@@ -608,6 +608,88 @@
   font-weight: 500;
 }
 
+/* --- 아코디언 UI 스타일 --- */
+.accordion-section {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 8px !important; /* ✨ 항목 사이 여백 줄이기 */
+  overflow: hidden;
+  width: 100%; /* ✨ 아코디언 섹션이 항상 100% 너비를 차지하도록 명시 */
+}
+.accordion-header {
+  width: 100%; /* ✨ [추가] 헤더가 항상 가로 너비를 100% 사용하도록 명시합니다. */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px; /* ✨ 제목과 아이콘 사이 간격 추가 */
+  /* ✨ [수정] 말씀하신 대로 패딩 값을 조정하여 더 얇게 만듭니다. */
+  padding: 10px 16px;
+  background-color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: left; /* ✨ 내부 텍스트 왼쪽 정렬 */
+}
+.accordion-header:hover {
+  background-color: var(--bg-color);
+}
+.accordion-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1; /* ✨ [핵심 수정] 제목 영역이 가능한 모든 공간을 차지하도록 설정 */
+  min-width: 0; /* ✨ [핵심 수정] flex 아이템이 줄어들 수 있도록 허용하여 ellipsis가 작동하게 함 */
+}
+.accordion-title {
+  font-size: 1em;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.accordion-subtitle {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%; /* ellipsis 효과를 위해 너비 100% 지정 */
+}
+.accordion-header .chevron-icon {
+  transition: transform 0.3s ease-in-out;
+  flex-shrink: 0; /* ✨ [추가] 아이콘이 찌그러지지 않도록 합니다. */
+}
+.accordion-header .chevron-icon.expanded {
+  transform: rotate(180deg);
+}
+.accordion-content-wrapper {
+  display: grid;
+  grid-template-rows: 0fr; /* 닫혔을 때: 높이가 0인 행 */
+  transition: grid-template-rows 0.3s ease-in-out;
+  background-color: var(--bg-color);
+}
+.accordion-content-wrapper.expanded {
+  grid-template-rows: 1fr; /* 열렸을 때: 내용물 크기만큼 1fr 행 */
+  border-top: 1px solid var(--border-color);
+}
+.accordion-content {
+  overflow: hidden; /* grid 애니메이션을 위해 필수 */
+}
+.accordion-content.expanded {
+  max-height: 500px; /* 충분한 최대 높이 설정 */
+  border-top: 1px solid var(--border-color);
+}
+.accordion-content-inner {
+    padding: 16px; /* ✨ 콘텐츠 내부에 패딩을 직접 적용 */
+}
+.accordion-content-inner > .form-item-full,
+.accordion-content-inner > .form-item-half {
+    margin: 0px 0px 10px 0px !important;
+}
+.accordion-content-inner > .form-item-full:last-child,
+.accordion-content-inner > .form-item-half:last-child,
+.accordion-content-inner > div:last-child {
+  margin-bottom: 0 !important;
+}
 
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
@@ -661,7 +743,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .add-expense-modal .split-detail-row:last-child {
@@ -669,7 +751,7 @@
   }
   
   .add-expense-modal .split-detail-row label {
-    flex-basis: 80px;
+    flex-basis: 60px;
     flex-shrink: 0;
     text-align: right;
     font-size: 0.9em;

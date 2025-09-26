@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import FullSplitViewModal from './FullSplitViewModal';
+import AccordionSection from './AccordionSection';
 
 // --- 아이콘 SVG 및 헬퍼 함수 ---
 const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24 24" fill={isLocked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{isLocked ? <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4" /> : <path d="M5 11H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2m-4-4a5 5 0 0 0-10 0v4h10V7z" />}</svg> );
@@ -20,90 +21,58 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const [splitDetailStrings, setSplitDetailStrings] = useState({});
   const [lockedParticipants, setLockedParticipants] = useState(new Set());
   const [isFullSplitViewOpen, setIsFullSplitViewOpen] = useState(false);
+  const [openSection, setOpenSection] = useState('basic');
 
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
+
+  const handleToggleSection = (sectionName) => {
+    setOpenSection(prevSection => (prevSection === sectionName ? null : sectionName));
+  };
 
   const setDefaultSplits = useCallback((method) => {
     const totalAmount = unformatNumber(amount);
-    if ((method === 'amount' && !totalAmount) || participants.length === 0) {
-      setSplitDetails({}); setSplitDetailStrings({}); return;
-    }
+    if ((method === 'amount' && !totalAmount) || participants.length === 0) { setSplitDetails({}); setSplitDetailStrings({}); return; }
     let newDetails = {};
     let newDetailStrings = {};
-
-    if (method === 'amount') {
-      const baseAmount = Math.floor(totalAmount / participants.length);
-      const remainder = totalAmount % participants.length;
-      
-      participants.forEach((p, index) => {
-        // 나머지 값을 앞 순서의 참여자들에게 1원씩 분배
-        newDetails[p.id] = baseAmount + (index < remainder ? 1 : 0);
-        newDetailStrings[p.id] = formatNumber(newDetails[p.id]);
-      });
-
-    } else if (method === 'percentage') {
-      // ✨ [수정] 비율 나머지 분배 로직
-      const basePercentage = Math.floor(100 / participants.length);
-      const remainder = 100 % participants.length;
-
-      participants.forEach((p, index) => {
-        // 나머지 %를 앞 순서의 참여자들에게 1%씩 분배
-        const finalPercentage = basePercentage + (index < remainder ? 1 : 0);
-        newDetails[p.id] = finalPercentage;
-        newDetailStrings[p.id] = String(finalPercentage);
-      });
-    }
+    if (method === 'amount') { const baseAmount = Math.floor(totalAmount / participants.length); const remainder = totalAmount % participants.length; participants.forEach((p, index) => { newDetails[p.id] = baseAmount + (index < remainder ? 1 : 0); newDetailStrings[p.id] = formatNumber(newDetails[p.id]); });
+    } else if (method === 'percentage') { const basePercentage = Math.floor(100 / participants.length); const remainder = 100 % participants.length; participants.forEach((p, index) => { const finalPercentage = basePercentage + (index < remainder ? 1 : 0); newDetails[p.id] = finalPercentage; newDetailStrings[p.id] = String(finalPercentage); }); }
     setSplitDetails(newDetails);
     setSplitDetailStrings(newDetailStrings);
-  }, [amount, participants]); // payerId는 더 이상 의존하지 않으므로 배열에서 제거
+  }, [amount, participants]);
 
-  const rebalancePercentages = useCallback((updatedDetails, focusedParticipantId = null) => {
-    const unlockedParticipants = participants.filter(p => !lockedParticipants.has(p.id) && p.id !== focusedParticipantId);
-    if (unlockedParticipants.length === 0) return { newDetails: updatedDetails, newStrings: {} };
-    
-    let currentTotal = 0;
-    participants.forEach(p => { if (lockedParticipants.has(p.id) || p.id === focusedParticipantId) { currentTotal += Number(updatedDetails[p.id] || 0); } });
-    
-    const remainingPercentage = 100 - currentTotal;
-    const newDetails = { ...updatedDetails };
-    const newStrings = {};
-
-    if (unlockedParticipants.length > 0) {
-        const share = remainingPercentage / unlockedParticipants.length;
-        unlockedParticipants.forEach(p => {
-            newDetails[p.id] = share;
-            newStrings[p.id] = share.toFixed(1).replace(/\.0$/, '');
-        });
-    }
-    return { newDetails, newStrings };
-  }, [participants, lockedParticipants]);
-  
   const rebalanceAmounts = useCallback((updatedDetails, focusedParticipantId = null) => {
     const totalAmount = unformatNumber(amount);
     if (!totalAmount || participants.length === 0) return { newDetails: updatedDetails, newStrings: {} };
-
     const unlockedParticipants = participants.filter(p => !lockedParticipants.has(p.id) && p.id !== focusedParticipantId);
     if (unlockedParticipants.length === 0) return { newDetails: updatedDetails, newStrings: {} };
-
     let currentTotal = 0;
     participants.forEach(p => { if (lockedParticipants.has(p.id) || p.id === focusedParticipantId) { currentTotal += Math.round(Number(updatedDetails[p.id] || 0)); } });
-    
     const remainingAmount = totalAmount - currentTotal;
     const newDetails = { ...updatedDetails };
     const newStrings = {};
-
     if (remainingAmount >= 0 && unlockedParticipants.length > 0) {
       const baseShare = Math.floor(remainingAmount / unlockedParticipants.length);
       const remainder = remainingAmount % unlockedParticipants.length;
-      unlockedParticipants.forEach((p, index) => {
-        const share = baseShare + (index < remainder ? 1 : 0);
-        newDetails[p.id] = share;
-        newStrings[p.id] = formatNumber(share);
-      });
+      unlockedParticipants.forEach((p, index) => { const share = baseShare + (index < remainder ? 1 : 0); newDetails[p.id] = share; newStrings[p.id] = formatNumber(share); });
     }
     return { newDetails, newStrings };
   }, [amount, participants, lockedParticipants]);
-
+  
+  const rebalancePercentages = useCallback((updatedDetails, focusedParticipantId = null) => {
+    const unlockedParticipants = participants.filter(p => !lockedParticipants.has(p.id) && p.id !== focusedParticipantId);
+    if (unlockedParticipants.length === 0) return { newDetails: updatedDetails, newStrings: {} };
+    let currentTotal = 0;
+    participants.forEach(p => { if (lockedParticipants.has(p.id) || p.id === focusedParticipantId) { currentTotal += Number(updatedDetails[p.id] || 0); } });
+    const remainingPercentage = 100 - currentTotal;
+    const newDetails = { ...updatedDetails };
+    const newStrings = {};
+    if (unlockedParticipants.length > 0) {
+        const share = remainingPercentage / unlockedParticipants.length;
+        unlockedParticipants.forEach(p => { newDetails[p.id] = share; newStrings[p.id] = share.toFixed(1).replace(/\.0$/, ''); });
+    }
+    return { newDetails, newStrings };
+  }, [participants, lockedParticipants]);
 
   useEffect(() => {
     if (isOpen && expense) {
@@ -118,122 +87,41 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
       const initialDetails = expense.split_details || {};
       setSplitDetails(initialDetails);
       const initialStrings = {};
-      if (method !== 'equally') {
-        participants.forEach(p => {
-            const value = initialDetails[p.id];
-            if (value !== undefined) {
-              initialStrings[p.id] = method === 'amount' ? formatNumber(value) : String(value);
-            }
-        });
-      }
+      if (method !== 'equally') { participants.forEach(p => { const value = initialDetails[p.id]; if (value !== undefined) { initialStrings[p.id] = method === 'amount' ? formatNumber(value) : String(value); } }); }
       setSplitDetailStrings(initialStrings);
       setLockedParticipants(new Set(expense.locked_participant_ids || []));
       setPennyRoundingTargetId(expense.penny_rounding_target_id || '');
-
-      if (expense.split_participants && expense.split_participants.length > 0) {
-        setSplitParticipantIds(new Set(expense.split_participants));
-      } else {
-        setSplitParticipantIds(new Set(participants.map(p => p.id)));
-      }
+      setOpenSection('basic');
+      if (expense.split_participants && expense.split_participants.length > 0) { setSplitParticipantIds(new Set(expense.split_participants)); } else { setSplitParticipantIds(new Set(participants.map(p => p.id))); }
     }
   }, [isOpen, expense, participants, apiBaseUrl]);
   
-  const handleSplitMethodChange = (method) => {
-      setSplitMethod(method);
-      setLockedParticipants(new Set());
-      setDefaultSplits(method);
-  }
+  const handleSplitMethodChange = (method) => { setSplitMethod(method); setLockedParticipants(new Set()); setDefaultSplits(method); }
   
-  useEffect(() => {
-    if (isOpen && (splitMethod === 'amount' || splitMethod === 'percentage') && lockedParticipants.size === 0) {
-        setDefaultSplits(splitMethod);
-    }
-  }, [amount, payerId, isOpen, splitMethod, setDefaultSplits, lockedParticipants.size]);
+  useEffect(() => { if (isOpen && (splitMethod === 'amount' || splitMethod === 'percentage') && lockedParticipants.size === 0) { setDefaultSplits(splitMethod); } }, [amount, isOpen, splitMethod, setDefaultSplits, lockedParticipants.size]);
 
   const handleSplitDetailChange = (participantId, value) => {
     const cleanedValue = value.replace(/[^0-9.]/g, '');
     let newDetails = { ...splitDetails };
     let newStrings = { ...splitDetailStrings, [participantId]: cleanedValue };
-
-    if (splitMethod === 'amount') {
-        const numValue = unformatNumber(cleanedValue);
-        newDetails[participantId] = numValue;
-        newStrings[participantId] = formatNumber(numValue);
-        const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalanceAmounts(newDetails, participantId);
-        newDetails = rebalancedDetails;
-        Object.assign(newStrings, rebalancedStrings);
-    } else if (splitMethod === 'percentage') {
-        newDetails[participantId] = parseFloat(cleanedValue) || 0;
-        const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalancePercentages(newDetails, participantId);
-        newDetails = rebalancedDetails;
-        Object.assign(newStrings, rebalancedStrings);
-    }
-    
+    if (splitMethod === 'amount') { const numValue = unformatNumber(cleanedValue); newDetails[participantId] = numValue; newStrings[participantId] = formatNumber(numValue); const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalanceAmounts(newDetails, participantId); newDetails = rebalancedDetails; Object.assign(newStrings, rebalancedStrings);
+    } else if (splitMethod === 'percentage') { newDetails[participantId] = parseFloat(cleanedValue) || 0; const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalancePercentages(newDetails, participantId); newDetails = rebalancedDetails; Object.assign(newStrings, rebalancedStrings); }
     setSplitDetails(newDetails);
     setSplitDetailStrings(newStrings);
   };
-
-  const handleSplitDetailBlur = (participantId) => {
-    if (splitMethod === 'percentage') {
-        const value = parseFloat(splitDetailStrings[participantId]) || 0;
-        setSplitDetailStrings(prev => ({ ...prev, [participantId]: String(value).replace(/\.0$/, '') }));
-    }
-  };
   
+  const handleSplitDetailBlur = (participantId) => { if (splitMethod === 'percentage') { const value = parseFloat(splitDetailStrings[participantId]) || 0; setSplitDetailStrings(prev => ({ ...prev, [participantId]: String(value).replace(/\.0$/, '') })); } };
   const toggleLock = (participantId) => { setLockedParticipants(prev => { const newSet = new Set(prev); if (newSet.has(participantId)) newSet.delete(participantId); else newSet.add(participantId); return newSet; }); };
-
-  const handleParticipantSelectionChange = (participantId) => {
-    setSplitParticipantIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(participantId)) {
-        newSet.delete(participantId);
-      } else {
-        newSet.add(participantId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSelectAllToggle = () => {
-    if (splitParticipantIds.size === participants.length) {
-      setSplitParticipantIds(new Set());
-    } else {
-      setSplitParticipantIds(new Set(participants.map(p => p.id)));
-    }
-  };
+  const handleParticipantSelectionChange = (participantId) => { setSplitParticipantIds(prev => { const newSet = new Set(prev); if (newSet.has(participantId)) newSet.delete(participantId); else newSet.add(participantId); return newSet; }); };
+  const handleSelectAllToggle = () => { if (splitParticipantIds.size === participants.length) { setSplitParticipantIds(new Set()); } else { setSplitParticipantIds(new Set(participants.map(p => p.id))); } };
 
   const handleSaveExpense = () => {
     const totalAmount = unformatNumber(amount);
-    if (splitMethod === 'equally' && splitParticipantIds.size === 0) {
-      setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.');
-      return;
-    }
-    if (!desc.trim() || !totalAmount || !payerId || !project?.id) {
-        setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.');
-        return;
-    }
-     if (splitMethod === 'amount') {
-        const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0);
-        if (Math.abs(splitSum - totalAmount) > 0.01) {
-            setValidationError(`금액의 합계(${formatNumber(Math.round(splitSum))}원)가 총 지출액(${formatNumber(totalAmount)}원)과 일치하지 않습니다.`);
-            return;
-        }
-    } else if (splitMethod === 'percentage') {
-        const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0);
-        if (Math.abs(100 - splitSum) > 0.1) {
-            setValidationError(`비율의 합계(${splitSum.toFixed(1)}%)가 100%가 되어야 합니다.`);
-            return;
-        }
-    }
-
-    const updatedExpenseData = {
-      desc, amount: totalAmount, payer_id: Number(payerId),
-      split_method: splitMethod, split_details: splitDetails,
-      category_id: Number(selectedCategory),
-      locked_participant_ids: Array.from(lockedParticipants),
-      penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null,
-      split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [],
-    };
+    if (splitMethod === 'equally' && splitParticipantIds.size === 0) { setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.'); return; }
+    if (!desc.trim() || !totalAmount || !payerId || !project?.id) { setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.'); return; }
+     if (splitMethod === 'amount') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(splitSum - totalAmount) > 0.01) { setValidationError(`금액의 합계(${formatNumber(Math.round(splitSum))}원)가 총 지출액(${formatNumber(totalAmount)}원)과 일치하지 않습니다.`); return; }
+    } else if (splitMethod === 'percentage') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(100 - splitSum) > 0.1) { setValidationError(`비율의 합계(${splitSum.toFixed(1)}%)가 100%가 되어야 합니다.`); return; } }
+    const updatedExpenseData = { desc, amount: totalAmount, payer_id: Number(payerId), split_method: splitMethod, split_details: splitDetails, category_id: Number(selectedCategory), locked_participant_ids: Array.from(lockedParticipants), penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null, split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [], };
     onSave(expense.id, updatedExpenseData);
   };
 
@@ -242,116 +130,89 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const areAllSelected = participants.length > 0 && splitParticipantIds.size === participants.length;
   
   const renderSplitError = () => {
-    if (splitMethod === 'amount') {
-      const totalAmount = unformatNumber(amount);
-      if (totalAmount > 0) {
-        const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0);
-        const difference = totalAmount - splitSum;
-        if (difference !== 0) {
-          return (
-            <div className="split-error-details">
-              <span>총액: {formatNumber(totalAmount)}원</span>
-              <span>합계: {formatNumber(splitSum)}원</span>
-              <span className="difference">오차: {formatNumber(difference)}원</span>
-            </div>
-          );
-        }
-      }
-    } else if (splitMethod === 'percentage') {
-      const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0);
-      const difference = 100 - splitSum;
-      if (Math.abs(difference) > 0.01) {
-        return (
-          <div className="split-error-details">
-            <span>기준: 100%</span>
-            <span>합계: {splitSum.toFixed(1)}%</span>
-            <span className="difference">오차: {difference.toFixed(1)}%</span>
-          </div>
-        );
-      }
-    }
+    if (splitMethod === 'amount') { const totalAmount = unformatNumber(amount); if (totalAmount > 0) { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); const difference = totalAmount - splitSum; if (difference !== 0) { return ( <div className="split-error-details"><span>총액: {formatNumber(totalAmount)}원</span><span>합계: {formatNumber(splitSum)}원</span><span className="difference">오차: {formatNumber(difference)}원</span></div> ); } }
+    } else if (splitMethod === 'percentage') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); const difference = 100 - splitSum; if (Math.abs(difference) > 0.01) { return ( <div className="split-error-details"><span>기준: 100%</span><span>합계: {splitSum.toFixed(1)}%</span><span className="difference">오차: {difference.toFixed(1)}%</span></div> ); } }
     return null;
   };
+  
+  const payerName = participants.find(p => p.id === Number(payerId))?.name || '선택';
+  const splitMethodText = splitMethod === 'equally' ? '균등 부담' : (splitMethod === 'amount' ? '금액 지정' : '비율 지정');
+  const roundingTargetName = participants.find(p => p.id === Number(pennyRoundingTargetId))?.name;
+
+  const desktopLayout = (
+      <div className="expense-form">
+          <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
+          <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
+          <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
+          <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+          <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
+          {splitMethod === 'equally' && (
+              <>
+                  <div className="form-item-full split-participants-section">
+                      <div className="split-participants-header"><h4>분담할 참여자</h4><button type="button" onClick={handleSelectAllToggle} className="select-all-button">{areAllSelected ? '전체 해제' : '전체 선택'}</button></div>
+                      <div className="participant-checkbox-list">{participants.map(p => (<label key={p.id} className="participant-checkbox"><input type="checkbox" checked={splitParticipantIds.has(p.id)} onChange={() => handleParticipantSelectionChange(p.id)} /><span>{p.name}</span></label>))}</div>
+                  </div>
+                  <div className="form-item-full">
+                      <div className="form-group"><label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label><select id="penny-rounding-select-edit" value={pennyRoundingTargetId} onChange={e => setPennyRoundingTargetId(e.target.value)}><option value="">기능 사용 안함</option>{participants.filter(p => splitParticipantIds.has(p.id)).map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+                  </div>
+              </>
+          )}
+          {(splitMethod === 'amount' || splitMethod === 'percentage') && (
+              <div className="form-item-full">
+                  <div className="split-details-section">
+                      <div className="split-participants-header"><h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4><button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>전체보기</button></div>
+                      <div className="split-detail-list">{participants.map(p => (<div key={p.id} className="split-detail-row"><label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label><div className="input-with-unit"><input id={`split-detail-edit-${p.id}`} type="text" value={splitDetailStrings[p.id] || ''} onChange={e => handleSplitDetailChange(p.id, e.target.value)} onBlur={() => handleSplitDetailBlur(p.id)} placeholder="0" inputMode="numeric" disabled={lockedParticipants.has(p.id)} /><span>{splitMethod === 'amount' ? '원' : '%'}</span></div><button type="button" className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`} onClick={() => toggleLock(p.id)} title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}><LockIcon isLocked={lockedParticipants.has(p.id)} /></button></div>))}</div>
+                  </div>
+              </div>
+          )}
+          {renderSplitError()}
+      </div>
+  );
+
+  const mobileLayout = (
+      <div className="expense-form">
+          <AccordionSection title="기본 정보" subtitle={`${desc || '내용'}, ${amount || '0'}원 / 결제: ${payerName}`} isOpen={openSection === 'basic'} onToggle={() => handleToggleSection('basic')}>
+              <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
+              <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
+              <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
+              <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+          </AccordionSection>
+          <AccordionSection title="분배 방식" subtitle={splitMethodText} isOpen={openSection === 'split'} onToggle={() => handleToggleSection('split')}>
+              <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
+              {splitMethod === 'equally' && (
+                  <div className="form-item-full split-participants-section">
+                      <div className="split-participants-header"><h4>분담할 참여자</h4><button type="button" onClick={handleSelectAllToggle} className="select-all-button">{areAllSelected ? '전체 해제' : '전체 선택'}</button></div>
+                      <div className="participant-checkbox-list">{participants.map(p => (<label key={p.id} className="participant-checkbox"><input type="checkbox" checked={splitParticipantIds.has(p.id)} onChange={() => handleParticipantSelectionChange(p.id)} /><span>{p.name}</span></label>))}</div>
+                  </div>
+              )}
+              {(splitMethod === 'amount' || splitMethod === 'percentage') && (
+                  <div className="form-item-full">
+                      <div className="split-details-section">
+                          <div className="split-participants-header"><h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4><button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>전체보기</button></div>
+                          <div className="split-detail-list">{participants.map(p => (<div key={p.id} className="split-detail-row"><label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label><div className="input-with-unit"><input id={`split-detail-edit-${p.id}`} type="text" value={splitDetailStrings[p.id] || ''} onChange={e => handleSplitDetailChange(p.id, e.target.value)} onBlur={() => handleSplitDetailBlur(p.id)} placeholder="0" inputMode="numeric" disabled={lockedParticipants.has(p.id)} /><span>{splitMethod === 'amount' ? '원' : '%'}</span></div><button type="button" className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`} onClick={() => toggleLock(p.id)} title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}><LockIcon isLocked={lockedParticipants.has(p.id)} /></button></div>))}</div>
+                      </div>
+                  </div>
+              )}
+              {renderSplitError()}
+          </AccordionSection>
+          <AccordionSection title="추가 옵션" subtitle={roundingTargetName ? `10원 미만 몰아주기: ${roundingTargetName}` : '선택 안함'} isOpen={openSection === 'options'} onToggle={() => handleToggleSection('options')}>
+              <div className="form-item-full">
+                  <div className="form-group"><label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label><select id="penny-rounding-select-edit" value={pennyRoundingTargetId} onChange={e => setPennyRoundingTargetId(e.target.value)}><option value="">기능 사용 안함</option>{participants.filter(p => splitMethod === 'equally' ? splitParticipantIds.has(p.id) : true).map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+              </div>
+          </AccordionSection>
+      </div>
+  );
 
   return (
     <>
       <div className="modal-overlay">
         <div className="modal-content add-expense-modal" onClick={e => e.stopPropagation()}>
           <h2>지출 항목 수정</h2>
-          <div className="expense-form">
-            <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
-            <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
-            <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
-            <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
-            <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
-
-            {splitMethod === 'equally' && (
-              <>
-                <div className="form-item-full split-participants-section">
-                  <div className="split-participants-header">
-                    <h4>분담할 참여자</h4>
-                    <button type="button" onClick={handleSelectAllToggle} className="select-all-button">{areAllSelected ? '전체 해제' : '전체 선택'}</button>
-                  </div>
-                  <div className="participant-checkbox-list">
-                    {participants.map(p => (
-                      <label key={p.id} className="participant-checkbox">
-                        <input type="checkbox" checked={splitParticipantIds.has(p.id)} onChange={() => handleParticipantSelectionChange(p.id)} />
-                        <span>{p.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="form-item-full">
-                  <div className="form-group">
-                    <label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label>
-                    <select id="penny-rounding-select-edit" value={pennyRoundingTargetId} onChange={e => setPennyRoundingTargetId(e.target.value)}>
-                      <option value="">기능 사용 안함</option>
-                      {participants.filter(p => splitParticipantIds.has(p.id)).map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                    </select>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {(splitMethod === 'amount' || splitMethod === 'percentage') && (
-              <div className="form-item-full">
-                <div className="split-details-section">
-                  <div className="split-participants-header">
-                    <h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4>
-                    <button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>전체보기</button>
-                  </div>
-                  <div className="split-detail-list">
-                    {participants.map(p => (
-                      <div key={p.id} className="split-detail-row">
-                        <label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label>
-                        <div className="input-with-unit">
-                          <input id={`split-detail-edit-${p.id}`} type="text" value={splitDetailStrings[p.id] || ''} onChange={e => handleSplitDetailChange(p.id, e.target.value)} onBlur={() => handleSplitDetailBlur(p.id)} placeholder="0" inputMode="numeric" disabled={lockedParticipants.has(p.id)} />
-                          <span>{splitMethod === 'amount' ? '원' : '%'}</span>
-                        </div>
-                        <button type="button" className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`} onClick={() => toggleLock(p.id)} title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}><LockIcon isLocked={lockedParticipants.has(p.id)} /></button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {renderSplitError()}
-              </div>
-            )}
-          </div>
+          {isMobile ? mobileLayout : desktopLayout}
           <div className="modal-footer">{validationError && <p className="error-message">{validationError}</p>}<div className="modal-buttons"><button type="button" className="cancel-button" onClick={onClose}>취소</button><button type="button" className="confirm-button" onClick={handleSaveExpense}>저장</button></div></div>
         </div>
       </div>
-
-      <FullSplitViewModal
-        isOpen={isFullSplitViewOpen}
-        onClose={() => setIsFullSplitViewOpen(false)}
-        participants={participants}
-        splitMethod={splitMethod}
-        splitDetailStrings={splitDetailStrings}
-        lockedParticipants={lockedParticipants}
-        handleSplitDetailChange={handleSplitDetailChange}
-        handleSplitDetailBlur={handleSplitDetailBlur}
-        toggleLock={toggleLock}
-      />
+      <FullSplitViewModal isOpen={isFullSplitViewOpen} onClose={() => setIsFullSplitViewOpen(false)} participants={participants} splitMethod={splitMethod} splitDetailStrings={splitDetailStrings} lockedParticipants={lockedParticipants} handleSplitDetailChange={handleSplitDetailChange} handleSplitDetailBlur={handleSplitDetailBlur} toggleLock={toggleLock}/>
     </>
   );
 }
