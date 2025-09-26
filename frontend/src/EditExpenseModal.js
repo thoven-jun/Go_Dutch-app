@@ -104,8 +104,28 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
     const cleanedValue = value.replace(/[^0-9.]/g, '');
     let newDetails = { ...splitDetails };
     let newStrings = { ...splitDetailStrings, [participantId]: cleanedValue };
-    if (splitMethod === 'amount') { const numValue = unformatNumber(cleanedValue); newDetails[participantId] = numValue; newStrings[participantId] = formatNumber(numValue); const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalanceAmounts(newDetails, participantId); newDetails = rebalancedDetails; Object.assign(newStrings, rebalancedStrings);
-    } else if (splitMethod === 'percentage') { newDetails[participantId] = parseFloat(cleanedValue) || 0; const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalancePercentages(newDetails, participantId); newDetails = rebalancedDetails; Object.assign(newStrings, rebalancedStrings); }
+
+    if (splitMethod === 'amount') {
+        const numValue = unformatNumber(cleanedValue);
+        newDetails[participantId] = numValue;
+        newStrings[participantId] = formatNumber(numValue);
+        const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalanceAmounts(newDetails, participantId);
+        newDetails = rebalancedDetails;
+        Object.assign(newStrings, rebalancedStrings);
+    } else if (splitMethod === 'percentage') {
+        // ✨ [핵심 수정] 100을 초과하는 값을 입력하면 100으로 자동 수정하는 로직
+        let numValue = parseFloat(cleanedValue) || 0;
+        if (numValue > 100) {
+            numValue = 100;
+            newStrings[participantId] = '100'; // 화면에 보이는 값도 100으로 수정
+        }
+        newDetails[participantId] = numValue;
+        
+        const { newDetails: rebalancedDetails, newStrings: rebalancedStrings } = rebalancePercentages(newDetails, participantId);
+        newDetails = rebalancedDetails;
+        Object.assign(newStrings, rebalancedStrings);
+    }
+    
     setSplitDetails(newDetails);
     setSplitDetailStrings(newStrings);
   };
@@ -130,8 +150,35 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const areAllSelected = participants.length > 0 && splitParticipantIds.size === participants.length;
   
   const renderSplitError = () => {
-    if (splitMethod === 'amount') { const totalAmount = unformatNumber(amount); if (totalAmount > 0) { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); const difference = totalAmount - splitSum; if (difference !== 0) { return ( <div className="split-error-details"><span>총액: {formatNumber(totalAmount)}원</span><span>합계: {formatNumber(splitSum)}원</span><span className="difference">오차: {formatNumber(difference)}원</span></div> ); } }
-    } else if (splitMethod === 'percentage') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); const difference = 100 - splitSum; if (Math.abs(difference) > 0.01) { return ( <div className="split-error-details"><span>기준: 100%</span><span>합계: {splitSum.toFixed(1)}%</span><span className="difference">오차: {difference.toFixed(1)}%</span></div> ); } }
+    const renderError = (total, sum, diff, unit) => (
+      // ✨ [수정] 총액/합계와 오차를 별도의 div로 그룹화
+      <div className="split-error-details">
+        <div className="split-error-details-main">
+          <span>총액: {formatNumber(total)}{unit}</span>
+          <span>합계: {formatNumber(sum)}{unit}</span>
+        </div>
+        <div className="split-error-details-diff">
+          <span className="difference">오차: {formatNumber(diff)}{unit}</span>
+        </div>
+      </div>
+    );
+
+    if (splitMethod === 'amount') {
+      const totalAmount = unformatNumber(amount);
+      if (totalAmount > 0) {
+        const splitSum = Object.values(splitDetails).reduce((s, v) => s + Number(v || 0), 0);
+        const difference = totalAmount - splitSum;
+        if (difference !== 0) {
+          return renderError(totalAmount, splitSum, difference, '원');
+        }
+      }
+    } else if (splitMethod === 'percentage') {
+      const splitSum = Object.values(splitDetails).reduce((s, v) => s + Number(v || 0), 0);
+      const difference = (100 - splitSum).toFixed(1);
+      if (Math.abs(difference) > 0.01) {
+        return renderError('100', splitSum.toFixed(1), difference, '%');
+      }
+    }
     return null;
   };
   
@@ -163,9 +210,9 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
                       <div className="split-participants-header"><h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4><button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>전체보기</button></div>
                       <div className="split-detail-list">{participants.map(p => (<div key={p.id} className="split-detail-row"><label htmlFor={`split-detail-edit-${p.id}`}>{p.name}</label><div className="input-with-unit"><input id={`split-detail-edit-${p.id}`} type="text" value={splitDetailStrings[p.id] || ''} onChange={e => handleSplitDetailChange(p.id, e.target.value)} onBlur={() => handleSplitDetailBlur(p.id)} placeholder="0" inputMode="numeric" disabled={lockedParticipants.has(p.id)} /><span>{splitMethod === 'amount' ? '원' : '%'}</span></div><button type="button" className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`} onClick={() => toggleLock(p.id)} title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}><LockIcon isLocked={lockedParticipants.has(p.id)} /></button></div>))}</div>
                   </div>
+                  {renderSplitError()}
               </div>
           )}
-          {renderSplitError()}
       </div>
   );
 
@@ -212,7 +259,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
           <div className="modal-footer">{validationError && <p className="error-message">{validationError}</p>}<div className="modal-buttons"><button type="button" className="cancel-button" onClick={onClose}>취소</button><button type="button" className="confirm-button" onClick={handleSaveExpense}>저장</button></div></div>
         </div>
       </div>
-      <FullSplitViewModal isOpen={isFullSplitViewOpen} onClose={() => setIsFullSplitViewOpen(false)} participants={participants} splitMethod={splitMethod} splitDetailStrings={splitDetailStrings} lockedParticipants={lockedParticipants} handleSplitDetailChange={handleSplitDetailChange} handleSplitDetailBlur={handleSplitDetailBlur} toggleLock={toggleLock}/>
+      <FullSplitViewModal isOpen={isFullSplitViewOpen} onClose={() => setIsFullSplitViewOpen(false)} participants={participants} splitMethod={splitMethod} splitDetailStrings={splitDetailStrings} lockedParticipants={lockedParticipants} handleSplitDetailChange={handleSplitDetailChange} handleSplitDetailBlur={handleSplitDetailBlur} toggleLock={toggleLock} renderSplitError={renderSplitError}/>
     </>
   );
 }

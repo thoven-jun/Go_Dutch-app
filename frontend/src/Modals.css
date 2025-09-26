@@ -116,10 +116,10 @@
 .add-expense-modal .split-details-section {
   width: 100%;
   padding: 15px;
+  /* margin-bottom: 10px; */ /* ✨ 이 줄을 삭제하거나 주석 처리합니다. */
   background-color: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  /* ✨ 스크롤 관련 속성(max-height, overflow-y)을 제거하고 flex 레이아웃으로 변경 */
   display: flex;
   flex-direction: column;
 }
@@ -154,24 +154,32 @@
 
 /* ✨ 실시간 오차 메시지 스타일 */
 .split-error-details {
-  display: flex; /* 가로로 정렬 */
-  justify-content: flex-end; /* 오른쪽 정렬 */
-  gap: 12px; /* 항목 사이 간격 */
-  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 12px;
+  margin-top: 8px; /* ✨ 상단 여백을 8px로 조정 (여백 축소) */
   padding: 8px 12px;
   background-color: #fff5f5;
   border: 1px solid #f5c6cb;
   border-radius: 4px;
   font-size: 0.85em;
   color: #721c24;
+  width: fit-content; /* ✨ 너비를 내용물에 맞춤 */
+  margin-left: auto; /* ✨ 박스 자체를 오른쪽으로 밀어 정렬 */
 }
-
 .split-error-details span {
   font-weight: 500;
 }
-
 .split-error-details span.difference {
-  font-weight: 700; /* 오차는 굵게 표시 */
+  font-weight: 700;
+}
+.split-error-details-main {
+    display: flex;
+    gap: 12px;
+}
+.split-error-details-diff {
+    display: flex;
 }
 
 .add-expense-modal .split-detail-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
@@ -771,6 +779,18 @@
 
   .participant-full-view .participant-input-row {
     margin-bottom: 8px;
+  }
+
+  .split-error-details {
+    flex-direction: column; /* 세로로 쌓도록 변경 */
+    align-items: flex-end; /* 오른쪽 정렬 */
+    gap: 4px; /* 줄 사이의 간격 */
+    font-size: 0.8em;
+    padding: 8px 12px;
+  }
+  .split-error-details-main {
+    display: flex;
+    gap: 12px; /* '총액'과 '합계' 사이의 간격 */
   }
 }
 

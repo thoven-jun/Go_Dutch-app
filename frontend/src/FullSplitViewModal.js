@@ -2,7 +2,6 @@
 
 import React from 'react';
 
-// 아이콘 및 헬퍼 함수는 EditExpenseModal에서 가져옵니다.
 const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24 24" fill={isLocked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{isLocked ? <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4" /> : <path d="M5 11H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2m-4-4a5 5 0 0 0-10 0v4h10V7z" />}</svg> );
 
 function FullSplitViewModal({
@@ -14,7 +13,9 @@ function FullSplitViewModal({
   lockedParticipants,
   handleSplitDetailChange,
   handleSplitDetailBlur,
-  toggleLock
+  toggleLock,
+  // ✨ [1/3] 오차 알림을 렌더링하는 함수를 props로 전달받습니다.
+  renderSplitError
 }) {
   if (!isOpen) return null;
 
@@ -53,6 +54,9 @@ function FullSplitViewModal({
             </div>
           ))}
         </div>
+
+        {/* ✨ [2/3] 전달받은 함수를 호출하여 오차 알림을 표시합니다. */}
+        {renderSplitError && renderSplitError()}
 
         <div className="modal-footer">
           <div className="modal-buttons">
