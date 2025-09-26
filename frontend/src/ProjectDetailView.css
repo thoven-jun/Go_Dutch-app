@@ -203,7 +203,7 @@
   display: flex;
   align-items: center;
   gap: 4px; /* 아이콘 사이 간격 */
-  margin-left: 10px;
+  margin-left: 3px;
 }
 
 .expense-item .action-button {
@@ -370,7 +370,7 @@
 
 /* --- 기존 스타일과 충돌을 막기 위해 !important 추가 --- */
 .split-detail-row .input-with-unit input {
-    padding: 10px 35px 10px 10px !important;
+    padding: 10px 28px 12.5px 10px !important;
     text-align: right;
     height: 40px !important; /* 높이 조정 */
     border: 1px solid var(--border-color) !important;
