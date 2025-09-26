@@ -1,3 +1,5 @@
+// src/AccordionSection.js
+
 import React from 'react';
 
 const ChevronIcon = ({ isExpanded }) => (
@@ -6,18 +8,24 @@ const ChevronIcon = ({ isExpanded }) => (
   </svg>
 );
 
-function AccordionSection({ title, subtitle, isOpen, onToggle, children }) {
+// ✨ [1/2] disabled prop 추가 (기본값은 false)
+function AccordionSection({ title, subtitle, isOpen, onToggle, children, disabled = false }) {
   return (
-    <div className="accordion-section">
-      <button type="button" className="accordion-header" onClick={onToggle}>
+    // ✨ [2/2] disabled 상태일 때 CSS 클래스를 추가하고, 버튼을 비활성화
+    <div className={`accordion-section ${disabled ? 'disabled' : ''}`}>
+      <button 
+        type="button" 
+        className="accordion-header" 
+        onClick={!disabled ? onToggle : undefined} 
+        disabled={disabled}
+      >
         <div className="accordion-title-group">
           <span className="accordion-title">{title}</span>
           {subtitle && <span className="accordion-subtitle">{subtitle}</span>}
         </div>
         <ChevronIcon isExpanded={isOpen} />
       </button>
-      {/* ✨ [핵심 수정] 애니메이션을 위한 grid wrapper div 추가 */}
-      <div className={`accordion-content-wrapper ${isOpen ? 'expanded' : ''}`}>
+      <div className={`accordion-content-wrapper ${isOpen && !disabled ? 'expanded' : ''}`}>
         <div className="accordion-content">
           <div className="accordion-content-inner">
             {children}

@@ -96,7 +96,7 @@ function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddEx
             {expenses.map((e) => {
               const payer = participants.find(p => p.id === e.payer_id);
               return (
-                <li key={e.id} className="expense-item">
+                <li key={e.id} className="expense-item" onClick={() => openEditExpenseModal(project, e)}>
                   <div className="expense-item-info">
                     <div className="expense-item-icon">{e.category?.emoji || '⚪️'}</div>
                     <div className="expense-item-desc">{e.desc}</div>
@@ -106,8 +106,17 @@ function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddEx
                     <div className="expense-item-payer">결제: {payer ? payer.name : '알 수 없음'}</div>
                   </div>
                   <div className="expense-item-actions">
-                    <button onClick={() => openEditExpenseModal(project, e)} className="action-button"><EditIcon /></button>
-                    <button onClick={() => handleDeleteExpense(e.id)} className="action-button"><DeleteIcon /></button>                  
+                    {/* ✨ [2/3] 기존의 수정 버튼을 삭제합니다. */}
+                    <button 
+                      onClick={(event) => {
+                        // 이벤트 버블링을 막아, 삭제 버튼을 눌렀을 때 수정 모달이 열리지 않도록 합니다.
+                        event.stopPropagation(); 
+                        handleDeleteExpense(e.id);
+                      }} 
+                      className="action-button"
+                    >
+                      <DeleteIcon />
+                    </button>
                   </div>
                 </li>
               );

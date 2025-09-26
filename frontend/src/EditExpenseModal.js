@@ -242,12 +242,25 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
               )}
               {renderSplitError()}
           </AccordionSection>
-          <AccordionSection title="추가 옵션" subtitle={roundingTargetName ? `10원 미만 몰아주기: ${roundingTargetName}` : '선택 안함'} isOpen={openSection === 'options'} onToggle={() => handleToggleSection('options')}>
-              <div className="form-item-full">
-                  <div className="form-group"><label htmlFor="penny-rounding-select-edit">10원 미만 단위 몰아주기</label><select id="penny-rounding-select-edit" value={pennyRoundingTargetId} onChange={e => setPennyRoundingTargetId(e.target.value)}><option value="">기능 사용 안함</option>{participants.filter(p => splitMethod === 'equally' ? splitParticipantIds.has(p.id) : true).map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
-              </div>
-          </AccordionSection>
-      </div>
+          
+          <AccordionSection
+            title="추가 옵션"
+            subtitle={roundingTargetName ? `10원 미만 몰아주기: ${roundingTargetName}` : '선택 안함'}
+            isOpen={openSection === 'options'}
+            onToggle={() => handleToggleSection('options')}
+            // ✨ [핵심 수정] 아래 disabled 속성을 추가합니다.
+            disabled={isMobile && (splitMethod === 'amount' || splitMethod === 'percentage')}
+          >
+        <div className="form-item-full">
+          <div className="form-group">
+            <label htmlFor="penny-rounding-select-add">10원 미만 단위 몰아주기</label>
+            <select id="penny-rounding-select-add" value={pennyRoundingTargetId} onChange={e => setPennyRoundingTargetId(e.target.value)}>
+              <option value="">기능 사용 안함</option>{participants.filter(p => splitMethod === 'equally' ? splitParticipantIds.has(p.id) : true).map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+              </select>
+          </div>
+        </div>
+      </AccordionSection>
+    </div>
   );
 
   return (

@@ -144,13 +144,25 @@
   padding: 15px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  margin-bottom: 8px; /* ✨ 변경: 여백을 줄여 촘촘하게 만듭니다. */
+  margin-bottom: 8px;
+  cursor: pointer; /* ✨ [추가] 마우스 커서를 포인터로 변경 */
+  transition: background-color 0.2s, box-shadow 0.2s; /* ✨ [추가] 부드러운 효과를 위한 transition */
+}
+.expense-item:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 .expense-item-info {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-grow: 1;
+  min-width: 0;
+}
+.expense-item-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .expense-item-icon {
   background-color: var(--bg-secondary-color);
@@ -165,11 +177,14 @@
 .expense-item-details {
   text-align: right;
   flex-shrink: 0;
+  max-width: 110px
 }
-.expense-item-amount {
-  font-weight: bold;
-  font-size: 1.1em;
-  color: var(--primary-color);
+.expense-item-payer {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .expense-item-payer {
   font-size: 0.85em;
@@ -504,7 +519,7 @@
 /* 5. 참여자 이름 목록 스타일 */
 .participant-section .participant-list-items {
   margin: 0;
-  padding: 7px 10px 0px 25px; /* 사용자 지정 padding 값 반영 */
+  padding: 7px 10px 0px 10px; /* 사용자 지정 padding 값 반영 */
   list-style: none;
   /* ✨ [추가] 2열 그리드 레이아웃 설정 */
   display: grid;
@@ -615,5 +630,8 @@
   }
   .detail-footer {
     padding: 15px 20px;
+  }
+  .expense-item-details {
+    max-width: 90px;
   }
 }

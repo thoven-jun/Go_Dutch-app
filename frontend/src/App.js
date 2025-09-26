@@ -241,7 +241,6 @@ function AppContent() {
     }).catch(error => console.error("Failed to update expense:", error));
   };
 
-  // ✨ [2/4] 선택된 프로젝트를 토글하는 핸들러
   const handleProjectSelect = (projectId) => {
     setSelectedProjects(prevSelected => {
       const newSelected = new Set(prevSelected);
@@ -253,14 +252,13 @@ function AppContent() {
       return newSelected;
     });
   };
-
-  // ✨ [3/4] 선택 모드를 활성화/비활성화하고 선택 목록을 초기화하는 함수
-  const toggleSelectionMode = () => {
+  
+  // ✨ [1/2] toggleSelectionMode 함수를 useCallback으로 감싸줍니다.
+  const toggleSelectionMode = useCallback(() => {
     setIsSelectionMode(prev => !prev);
-    setSelectedProjects(new Set()); // 모드를 바꿀 때 선택 상태 초기화
-  };
+    setSelectedProjects(new Set());
+  }, [])
 
-  // ✨ [4/4] 선택된 프로젝트들을 일괄 삭제하는 함수
   const handleBulkDelete = () => {
     showAlert(
       `${selectedProjects.size}개 항목 삭제`,
@@ -284,6 +282,13 @@ function AppContent() {
       }
     );
   };  
+
+  // ✨ [2/2] 사이드바가 접힐 때 선택 모드를 끄는 useEffect를 추가합니다.
+  useEffect(() => {
+    if (isSidebarCollapsed && isSelectionMode) {
+      toggleSelectionMode();
+    }
+  }, [isSidebarCollapsed, isSelectionMode, toggleSelectionMode]);
 
   return (
     <>
