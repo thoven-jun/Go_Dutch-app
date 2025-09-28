@@ -104,6 +104,9 @@
 .project-item:hover {
   background-color: #e5e7eb;
 }
+.project-item:hover .kebab-menu-button {
+  opacity: 1;
+}
 
 .project-item a.active {
   background-color: #dbeafe;
@@ -126,10 +129,6 @@
   border-radius: 50%;
   opacity: 0;
   transition: opacity 0.2s, background-color 0.2s;
-}
-
-.project-item:hover .kebab-menu-button {
-  opacity: 1;
 }
 
 .kebab-menu-button:hover {
@@ -360,15 +359,14 @@
     width: 100%;
   }
 
-  /* ✨ 케밥 메뉴 버튼을 모바일에서 숨김 */
-  .project-item .kebab-menu-button {
-    display: none;
-  }
   .selection-action-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     border-radius: 20px 20px 0 0;
+  }
+  .kebab-menu-button {
+    opacity: 1;
   }
 }

@@ -17,82 +17,38 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
   const [menuStyle, setMenuStyle] = useState({});
   const isSelected = selectedProjects.has(project.id);
   
-  // ✨ [1/3] 롱 프레스를 위한 타이머와 터치 위치를 저장할 ref 추가
-  const longPressTimer = useRef();
-  const touchCoords = useRef({ x: 0, y: 0 });
-  const isLongPress = useRef(false);
-
-  const showMenu = (e, isKebabClick = false) => {
+  // ✨ [수정] '더보기' 버튼 클릭만 처리하는 간소화된 메뉴 핸들러
+  const toggleMenu = (e) => {
      e.preventDefault();
      e.stopPropagation();
      
+     if (isMenuOpen) {
+        setOpenMenuId(null);
+        return;
+     }
+
+     const rect = e.currentTarget.getBoundingClientRect();
      const menuWidth = 140;
      const screenWidth = window.innerWidth;
      const margin = 16;
-     let x, y;
-
-     if (isKebabClick) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      x = rect.left; y = rect.bottom;
-    } else {
-      // 롱 프레스 시 저장해둔 터치 좌표를 사용
-      x = touchCoords.current.x;
-      y = touchCoords.current.y;
-    }
+     let x = rect.left;
+     let y = rect.bottom;
      
      if (x + menuWidth > screenWidth) {
-      x = screenWidth - menuWidth - margin;
-    }
-    setMenuStyle({ top: `${y}px`, left: `${x}px` });
-    setOpenMenuId(project.id);
-  };
+        x = screenWidth - menuWidth - margin;
+     }
+     
+     setMenuStyle({ top: `${y}px`, left: `${x}px` });
+     setOpenMenuId(project.id);
+  }
 
-  // ✨ [수정] 항목 클릭/탭 핸들러
+  // 항목 클릭/탭 핸들러
   const handleItemClick = (e) => {
     if (isSelectionMode) {
       e.preventDefault();
       onProjectSelect(project.id);
     } else {
-      // ✨ 롱 프레스 후 손가락을 뗄 때 링크 이동을 막음
-      if (isLongPress.current) {
-        e.preventDefault();
-        isLongPress.current = false; // 플래그 초기화
-        return;
-      }
       onCloseMobileSidebar();
-    }
-  };
-
-  // ✨ [2/3] 롱 프레스를 감지하는 터치 이벤트 핸들러 추가
-  const handleTouchStart = (e) => {
-    if (isSelectionMode) return; // 선택 모드에서는 작동 안 함
-
-    // 터치 시작 위치 저장
-    touchCoords.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    isLongPress.current = false;
-    
-    longPressTimer.current = setTimeout(() => {
-      isLongPress.current = true; // 롱 프레스로 판정
-      showMenu(e);
-    }, 500); // 500ms (0.5초)
-  };
-
-  const handleTouchEnd = () => {
-    clearTimeout(longPressTimer.current);
-  };
-  
-  // 스크롤 시 롱 프레스 취소
-  const handleTouchMove = () => {
-      clearTimeout(longPressTimer.current);
-  };
-
-  // ✨ [수정] 꾹 누르기/우클릭 핸들러
-  const handleContextMenu = (e) => {
-    // 선택 모드가 아닐 때만 보조 메뉴를 띄움
-    if (!isSelectionMode) {
-      showMenu(e);
-    } else {
-      e.preventDefault(); // 선택 모드에서는 기본 메뉴 방지
     }
   };
 
@@ -103,25 +59,14 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
           {isSelected && <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>}
         </div>
       )}
-      <NavLink 
-        to={`/project/${project.id}`} 
-        onClick={handleItemClick}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchMove}
-        // 데스크탑 우클릭을 위해 onContextMenu는 유지
-        onContextMenu={(e) => {
-            touchCoords.current = { x: e.clientX, y: e.clientY };
-            showMenu(e);
-        }}
-      >
+      <NavLink to={`/project/${project.id}`} onClick={handleItemClick}>
         {project.name}
       </NavLink>
 
       {/* ✨ [수정] 선택 모드가 아닐 때만 케밥 메뉴 버튼 표시 */}
       {!isSelectionMode && (
         <div className="menu-container">
-          <button className="kebab-menu-button" onClick={(e) => showMenu(e, true)}>
+          <button className="kebab-menu-button" onClick={toggleMenu}>
             <KebabMenuIcon />
           </button>
           {isMenuOpen && (
