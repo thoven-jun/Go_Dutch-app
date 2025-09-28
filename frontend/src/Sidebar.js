@@ -161,7 +161,7 @@ function Sidebar({ projects, onOpenRenameModal, onDeleteProject, isCollapsed, on
         )}
 
         <div className="sidebar-footer">
-          <Link to="#" className="footer-link" onClick={onCloseMobileSidebar}>
+          <Link to="/settings" className="footer-link" onClick={onCloseMobileSidebar}>
             <SettingsIcon />
             {!isCollapsed && <span className="footer-text">설정</span>}
           </Link>

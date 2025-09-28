@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Welcome from './Welcome';
 import ProjectDetailView from './ProjectDetailView';
 import SettlementResultView from './SettlementResultView';
+import Settings from './Settings';
 import RenameModal from './RenameModal';
 import DuplicateNameModal from './DuplicateNameModal';
 import CustomAlertModal from './CustomAlertModal';
@@ -332,7 +333,6 @@ function AppContent() {
                       closeAlert={closeAlert}
                       openAddExpenseModal={openAddExpenseModal}                    
                       openEditExpenseModal={openEditExpenseModal}
-                      // ✨ 상태 객체와 핸들러를 props로 전달합니다.
                       participantListStates={participantListStates}
                       onToggleParticipants={handleToggleParticipants}
                       apiBaseUrl={apiBaseUrl}
@@ -353,6 +353,10 @@ function AppContent() {
                   <Route 
                     path="/project/:projectId/settlement" 
                     element={<SettlementResultView apiBaseUrl={apiBaseUrl} />}
+                  />
+                  <Route 
+                    path="/settings" 
+                    element={<Settings apiBaseUrl={apiBaseUrl} showAlert={showAlert} />} 
                   />
                 </Routes>
           </div>

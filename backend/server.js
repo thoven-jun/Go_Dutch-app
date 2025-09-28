@@ -19,6 +19,60 @@ const readDb = () => JSON.parse(fs.readFileSync('db.json', 'UTF-8'));
 const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
 
 // --- 사용자 정의 라우트 ---
+// --- ✨ [추가] 새 카테고리 추가 API ---
+server.post('/categories', (req, res) => {
+  const db = readDb();
+  const { name, emoji } = req.body;
+  if (!name || !emoji) {
+    return res.status(400).jsonp({ error: "Name and emoji are required." });
+  }
+  const maxId = Math.max(0, ...db.categories.map(c => c.id));
+  const newCategory = { id: maxId + 1, name, emoji };
+  db.categories.push(newCategory);
+  writeDb(db);
+  res.status(201).jsonp(newCategory);
+});
+
+// --- ✨ [추가] 카테고리 수정 API ---
+server.patch('/categories/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, emoji } = req.body;
+  const db = readDb();
+  const category = db.categories.find(c => c.id === parseInt(id));
+  if (category) {
+    if (name) category.name = name;
+    if (emoji) category.emoji = emoji;
+    writeDb(db);
+    res.status(200).jsonp(category);
+  } else {
+    res.status(404).jsonp({ error: "Category not found" });
+  }
+});
+
+// --- ✨ [추가] 카테고리 삭제 API ---
+server.delete('/categories/:id', (req, res) => {
+  const { id } = req.params;
+  const categoryId = parseInt(id);
+  const db = readDb();
+
+  // 해당 카테고리를 사용하는 지출 내역이 있는지 확인
+  const isCategoryInUse = db.projects.some(p => 
+    p.expenses?.some(e => e.category_id === categoryId)
+  );
+
+  if (isCategoryInUse) {
+    return res.status(400).jsonp({ error: "Cannot delete category: it is currently in use by an expense." });
+  }
+
+  const categoryIndex = db.categories.findIndex(c => c.id === categoryId);
+  if (categoryIndex > -1) {
+    db.categories.splice(categoryIndex, 1);
+    writeDb(db);
+    res.status(200).jsonp({ message: 'Category deleted successfully' });
+  } else {
+    res.status(404).jsonp({ error: "Category not found" });
+  }
+});
 
 server.post('/projects', (req, res) => {
   const db = readDb();
