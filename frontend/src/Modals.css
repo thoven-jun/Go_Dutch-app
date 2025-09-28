@@ -21,7 +21,12 @@
   display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center;
   width: 100%; margin-top: 24px; min-height: 40px;
 }
-.modal-buttons { display: flex; gap: 10px; }
+.modal-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%; /* ✨ [추가] 너비를 100%로 설정 */
+  justify-content: flex-end; /* ✨ [핵심 수정] 이 한 줄을 추가하여 버튼을 오른쪽으로 정렬합니다. */
+}
 .modal-buttons button {
   padding: 10px 20px; border-radius: 5px; border: none; font-size: 0.9em;
   font-weight: 500; cursor: pointer; min-width: 80px;

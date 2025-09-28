@@ -15,7 +15,7 @@ const ManageIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill=
 const EditIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> );
 const InfoIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> );
 
-function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, isParticipantsExpanded, onToggleParticipants }) {
+function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, isParticipantsExpanded, onToggleParticipants }) {
   // const [isParticipantsExpanded, setIsParticipantsExpanded] = useState(true);
 
   const [disableTransition, setDisableTransition] = useState(true);
@@ -54,7 +54,16 @@ function ProjectDetailView({ project, onUpdate, showAlert, closeAlert, openAddEx
   return (
     <div className="detail-container">
       <header className="detail-header">
-        <h2 className="detail-title">{project.name}</h2>
+        <div className="detail-title-group">
+          <h2 className="detail-title">{project.name}</h2>
+          <button 
+            className="title-edit-button" 
+            onClick={() => onOpenRenameModal(project.id, project.name)}
+            title="프로젝트 이름 변경"
+          >
+            <EditIcon />
+          </button>
+        </div>
         <Link to={`/project/${project.id}/settlement`} className="settle-button">
           정산하기
         </Link>

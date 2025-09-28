@@ -611,6 +611,31 @@
   opacity: 1;
   visibility: visible;
 }
+.detail-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ✨ [추가] 제목 옆 수정 아이콘 버튼 스타일 */
+.title-edit-button {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: #adb5bd; /* 기본 아이콘 색상 */
+  line-height: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.title-edit-button:hover {
+  color: #212529; /* 호버 시 아이콘 색상 */
+  background-color: #f1f3f5; /* 호버 시 배경색 */
+}
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {

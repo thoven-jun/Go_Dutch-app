@@ -17,7 +17,7 @@ import './App.css';
 const MenuIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg> );
 
 // ProjectDetailView Wrapper 수정
-function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
+function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
   const { projectId } = useParams();
   const list = Array.isArray(projects) ? projects : Object.values(projects || {});
   const project = list.find(p => p.id === parseInt(projectId));
@@ -32,6 +32,7 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenDuplicateModal, showAl
   return <ProjectDetailView 
     project={project} 
     onUpdate={onUpdate}
+    onOpenRenameModal={onOpenRenameModal}
     onOpenDuplicateModal={onOpenDuplicateModal} 
     showAlert={showAlert}
     closeAlert={closeAlert}
@@ -325,6 +326,7 @@ function AppContent() {
                     element={<ProjectDetailWrapper 
                       projects={projects} 
                       onUpdate={fetchProjects} 
+                      onOpenRenameModal={handleOpenRenameModal}
                       onOpenDuplicateModal={handleOpenDuplicateModal}
                       showAlert={showAlert} 
                       closeAlert={closeAlert}
