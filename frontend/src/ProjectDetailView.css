@@ -177,18 +177,31 @@
 .expense-item-details {
   text-align: right;
   flex-shrink: 0;
-  max-width: 110px
+  /* ✨ [수정] 데스크톱 최대 너비를 110px -> 140px로 늘렸습니다. */
+  max-width: 150px;
 }
 .expense-item-payer {
   font-size: 0.85em;
   color: var(--text-secondary);
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  /* ✨ [추가] 자식 요소의 ellipsis가 제대로 작동하려면 부모에 overflow: hidden이 필요합니다. */
+  overflow: hidden;
+}
+.expense-item-payer .payer-label {
+  flex-shrink: 0; /* '결제:' 라벨은 줄어들지 않도록 설정 */
+}
+.expense-item-payer .payer-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 1; /* 이름 부분만 공간에 맞춰 줄어들도록 설정 */
+  text-align: right; /* 이름이 짧을 때를 대비해 오른쪽 정렬 유지 */
 }
-.expense-item-payer {
-  font-size: 0.85em;
-  color: var(--text-secondary);
+.expense-item-payer .split-count {
+  color: #868e96;
+  flex-shrink: 0; /* '(N명)' 텍스트는 줄어들지 않도록 설정 */
 }
 
 .add-form {
@@ -657,6 +670,7 @@
     padding: 15px 20px;
   }
   .expense-item-details {
-    max-width: 90px;
+    /* ✨ [수정] 모바일 최대 너비를 90px -> 120px로 늘렸습니다. */
+    max-width: 120px;
   }
 }

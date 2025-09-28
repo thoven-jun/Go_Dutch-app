@@ -104,6 +104,14 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
           <ul className="item-list expense-list">
             {expenses.map((e) => {
               const payer = participants.find(p => p.id === e.payer_id);
+
+              let splitCount = 0;
+              if (e.split_method === 'equally') {
+                splitCount = e.split_participants?.length > 0 ? e.split_participants.length : participants.length;
+              } else {
+                splitCount = Object.keys(e.split_details || {}).length;
+              }
+
               return (
                 <li key={e.id} className="expense-item" onClick={() => openEditExpenseModal(project, e)}>
                   <div className="expense-item-info">
@@ -112,13 +120,16 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
                   </div>
                   <div className="expense-item-details">
                     <div className="expense-item-amount">{formatNumber(e.amount)}원</div>
-                    <div className="expense-item-payer">결제: {payer ? payer.name : '알 수 없음'}</div>
+                    {/* ✨ [수정] 결제자 정보를 라벨과 이름으로 분리 */}
+                    <div className="expense-item-payer">
+                      <span className="payer-label">결제:</span>
+                      <span className="payer-name">{payer ? payer.name : '알 수 없음'}</span>
+                      {splitCount > 0 && <span className="split-count">({splitCount}명)</span>}
+                    </div>
                   </div>
                   <div className="expense-item-actions">
-                    {/* ✨ [2/3] 기존의 수정 버튼을 삭제합니다. */}
                     <button 
                       onClick={(event) => {
-                        // 이벤트 버블링을 막아, 삭제 버튼을 눌렀을 때 수정 모달이 열리지 않도록 합니다.
                         event.stopPropagation(); 
                         handleDeleteExpense(e.id);
                       }} 
