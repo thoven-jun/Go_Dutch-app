@@ -101,7 +101,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   useEffect(() => {
     if (isOpen) {
       fetch(`${apiBaseUrl}/categories`).then(res => res.json()).then(data => { setCategories(data); if (data.length > 0) setSelectedCategory(data[0].id); });
-      setDesc(''); setAmount(''); setPayerId(''); setSplitMethod('equally');
+      setDesc(''); setAmount('0'); setPayerId(''); setSplitMethod('equally');
       setSplitDetails({}); setSplitDetailStrings({}); setValidationError('');
       setLockedParticipants(new Set());
       setPennyRoundingTargetId('');
@@ -218,7 +218,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
     <div className="expense-form">
       <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
       <div className="form-item-half form-group"><label htmlFor="category-select-add">카테고리</label><select id="category-select-add" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
-      <div className="form-item-half floating-label-group"><input id="expense-amount-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-modal">금액</label><span className="unit">원</span></div>
+      <div className="form-item-half floating-label-group"><input id="expense-amount-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => {const numValue = unformatNumber(e.target.value); setAmount(numValue === 0 ? '' : String(numValue)); }} placeholder=" " inputMode="numeric"/><label htmlFor="expense-amount-modal">금액</label><span className="unit">원</span></div>
       <div className="form-item-full form-group"><label htmlFor="payer-select-add">결제자</label><select id="payer-select-add" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
       <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
       {splitMethod === 'equally' && (
@@ -246,10 +246,31 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
   const mobileLayout = (
     <div className="expense-form">
-      <AccordionSection title="기본 정보" subtitle={`${desc || '내용'}, ${amount || '0'}원 / 결제: ${payerName}`} isOpen={openSection === 'basic'} onToggle={() => handleToggleSection('basic')}>
+      <AccordionSection 
+        title="기본 정보" 
+        subtitle={`${desc || '내용'}, ${amount === '0' || amount === '' ? '0' : formatNumber(unformatNumber(amount))}원 / 결제: ${payerName}`} 
+        isOpen={openSection === 'basic'} 
+        onToggle={() => handleToggleSection('basic')}
+      >
         <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
         <div className="form-item-half form-group"><label htmlFor="category-select-add">카테고리</label><select id="category-select-add" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
-        <div className="form-item-half floating-label-group"><input id="expense-amount-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => setAmount(String(unformatNumber(e.target.value)))} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-modal">금액</label><span className="unit">원</span></div>
+        <div className="form-item-half floating-label-group">
+          <input 
+            id="expense-amount-modal" 
+            type="text" 
+            value={amount} 
+            onChange={e => setAmount(e.target.value)} 
+            onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} 
+            onFocus={e => {
+              const numValue = unformatNumber(e.target.value);
+              setAmount(numValue === 0 ? '' : String(numValue));
+            }}
+            placeholder=" " 
+            inputMode="numeric" 
+          />
+          <label htmlFor="expense-amount-modal">금액</label>
+          <span className="unit">원</span>
+        </div>
         <div className="form-item-full form-group"><label htmlFor="payer-select-add">결제자</label><select id="payer-select-add" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
       </AccordionSection>
 
