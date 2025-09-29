@@ -6,6 +6,7 @@ const fs = require('fs');
 const dbTemplatePath = 'db.template.json';
 const dbPath = 'db.json';
 
+// db.json 파일이 없으면 db.template.json을 복사해서 생성
 if (!fs.existsSync(dbPath)) {
   fs.copyFileSync(dbTemplatePath, dbPath);
 }
@@ -13,67 +14,16 @@ if (!fs.existsSync(dbPath)) {
 const router = jsonServer.router(dbPath);
 
 server.use(middlewares);
+// ✨ [수정] json-server.bodyParser -> jsonServer.bodyParser
 server.use(jsonServer.bodyParser);
 
+// 데이터베이스 파일을 읽고 쓰는 헬퍼 함수
 const readDb = () => JSON.parse(fs.readFileSync('db.json', 'UTF-8'));
 const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
 
 // --- 사용자 정의 라우트 ---
-// --- ✨ [추가] 새 카테고리 추가 API ---
-server.post('/categories', (req, res) => {
-  const db = readDb();
-  const { name, emoji } = req.body;
-  if (!name || !emoji) {
-    return res.status(400).jsonp({ error: "Name and emoji are required." });
-  }
-  const maxId = Math.max(0, ...db.categories.map(c => c.id));
-  const newCategory = { id: maxId + 1, name, emoji };
-  db.categories.push(newCategory);
-  writeDb(db);
-  res.status(201).jsonp(newCategory);
-});
 
-// --- ✨ [추가] 카테고리 수정 API ---
-server.patch('/categories/:id', (req, res) => {
-  const { id } = req.params;
-  const { name, emoji } = req.body;
-  const db = readDb();
-  const category = db.categories.find(c => c.id === parseInt(id));
-  if (category) {
-    if (name) category.name = name;
-    if (emoji) category.emoji = emoji;
-    writeDb(db);
-    res.status(200).jsonp(category);
-  } else {
-    res.status(404).jsonp({ error: "Category not found" });
-  }
-});
-
-// --- ✨ [추가] 카테고리 삭제 API ---
-server.delete('/categories/:id', (req, res) => {
-  const { id } = req.params;
-  const categoryId = parseInt(id);
-  const db = readDb();
-
-  // 해당 카테고리를 사용하는 지출 내역이 있는지 확인
-  const isCategoryInUse = db.projects.some(p => 
-    p.expenses?.some(e => e.category_id === categoryId)
-  );
-
-  if (isCategoryInUse) {
-    return res.status(400).jsonp({ error: "Cannot delete category: it is currently in use by an expense." });
-  }
-
-  const categoryIndex = db.categories.findIndex(c => c.id === categoryId);
-  if (categoryIndex > -1) {
-    db.categories.splice(categoryIndex, 1);
-    writeDb(db);
-    res.status(200).jsonp({ message: 'Category deleted successfully' });
-  } else {
-    res.status(404).jsonp({ error: "Category not found" });
-  }
-});
-
+// [수정] 새 프로젝트 생성 시, 기본 카테고리를 함께 생성
 server.post('/projects', (req, res) => {
   const db = readDb();
   const { name, participants, expenses } = req.body;
@@ -85,12 +35,21 @@ server.post('/projects', (req, res) => {
   ].filter(id => id != null);
   const maxId = Math.max(0, ...allIds);
 
+  const defaultCategories = [
+    { "id": 1, "name": "식비", "emoji": "🍔" },
+    { "id": 2, "name": "교통비", "emoji": "🚗" },
+    { "id": 3, "name": "쇼핑", "emoji": "🛍️" },
+    { "id": 4, "name": "문화생활", "emoji": "🎬" },
+    { "id": 5, "name": "기타", "emoji": "⚪️" }
+  ];
+
   const newProject = {
     id: maxId + 1,
     name: name || "새 프로젝트",
     participants: participants || [],
     expenses: expenses || [],
-    createdDate: new Date().toISOString()
+    createdDate: new Date().toISOString(),
+    categories: defaultCategories.map((cat, index) => ({...cat, id: index + 1}))
   };
 
   db.projects.push(newProject);
@@ -98,36 +57,119 @@ server.post('/projects', (req, res) => {
   res.status(201).jsonp(newProject);
 });
 
-server.get('/categories', (req, res) => {
-  const db = readDb();
-  res.jsonp(db.categories || []);
-});
-
-// 프로젝트 목록을 가져올 때 항상 참여자와 지출 내역을 포함하여 반환
+// [수정] 프로젝트 목록을 가져올 때, 각 프로젝트의 카테고리를 기준으로 지출 내역과 연결
 server.get('/projects', (req, res) => {
   const db = readDb();
-  const categories = db.categories || [];
-
-  const projectsWithDetails = db.projects.map(project => ({
-    ...project,
-    participants: (project.participants || []).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)),
-    expenses: (project.expenses || []).map(expense => {
-      const category = categories.find(c => c.id === expense.category_id);
-      return { ...expense, category };
-    }),
-  }));
+  const projectsWithDetails = db.projects.map(project => {
+    const projectCategories = project.categories || [];
+    return {
+      ...project,
+      participants: (project.participants || []).sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)),
+      expenses: (project.expenses || []).map(expense => {
+        const category = projectCategories.find(c => c.id === expense.category_id);
+        return { ...expense, category };
+      }),
+    }
+  });
   res.jsonp(projectsWithDetails);
 });
+
+// --- ✨ 프로젝트별 카테고리 관리 API ---
+
+// 특정 프로젝트의 카테고리 목록 가져오기
+server.get('/projects/:projectId/categories', (req, res) => {
+  const { projectId } = req.params;
+  const db = readDb();
+  const project = db.projects.find(p => p.id === parseInt(projectId));
+  if (project) {
+    res.jsonp(project.categories || []);
+  } else {
+    res.status(404).jsonp({ error: "Project not found" });
+  }
+});
+
+// 특정 프로젝트에 카테고리 추가
+server.post('/projects/:projectId/categories', (req, res) => {
+  const { projectId } = req.params;
+  const { name, emoji } = req.body;
+  const db = readDb();
+  const project = db.projects.find(p => p.id === parseInt(projectId));
+
+  if (project) {
+    project.categories = project.categories || [];
+    const maxId = Math.max(0, ...project.categories.map(c => c.id));
+    const newCategory = { id: maxId + 1, name, emoji };
+    project.categories.push(newCategory);
+    writeDb(db);
+    res.status(201).jsonp(newCategory);
+  } else {
+    res.status(404).jsonp({ error: "Project not found" });
+  }
+});
+
+// 카테고리 수정 (ID를 이용해 전체 프로젝트에서 검색)
+server.patch('/categories/:id', (req, res) => {
+    const { id } = req.params;
+    const categoryId = parseInt(id);
+    const { name, emoji, projectId } = req.body; // projectId 힌트를 받음
+    const db = readDb();
+    const project = db.projects.find(p => p.id === parseInt(projectId));
+
+    if (project) {
+      const category = project.categories.find(c => c.id === categoryId);
+      if (category) {
+        if (name) category.name = name;
+        if (emoji) category.emoji = emoji;
+        writeDb(db);
+        return res.status(200).jsonp(category);
+      }
+    }
+    // 만약 projectId 힌트가 없거나 못찾았을 경우 전체 탐색 (느릴 수 있음)
+    for (const p of db.projects) {
+        const category = p.categories?.find(c => c.id === categoryId);
+        if (category) {
+            if (name) category.name = name;
+            if (emoji) category.emoji = emoji;
+            writeDb(db);
+            return res.status(200).jsonp(category);
+        }
+    }
+    res.status(404).jsonp({ error: "Category not found in any project" });
+});
+
+// 카테고리 삭제 (ID를 이용해 전체 프로젝트에서 검색)
+server.delete('/categories/:id', (req, res) => {
+    const { id } = req.params;
+    const categoryId = parseInt(id);
+    const { projectId } = req.body; // projectId 힌트를 받음
+    const db = readDb();
+    const project = db.projects.find(p => p.id === parseInt(projectId));
+
+    if (project) {
+        const isCategoryInUse = project.expenses?.some(e => e.category_id === categoryId);
+        if (isCategoryInUse) {
+            return res.status(400).jsonp({ error: "Cannot delete category: it is currently in use by an expense." });
+        }
+        const categoryIndex = project.categories.findIndex(c => c.id === categoryId);
+        if (categoryIndex > -1) {
+            project.categories.splice(categoryIndex, 1);
+            writeDb(db);
+            return res.status(200).jsonp({ message: 'Category deleted successfully' });
+        }
+    }
+    res.status(404).jsonp({ error: "Category not found in the specified project" });
+});
+
+
+// --- 기존 프로젝트, 참여자, 지출 관련 API ---
 
 server.delete('/projects/:id', (req, res) => {
   const { id } = req.params;
   const projectId = parseInt(id);
   const db = readDb();
-
   const projectIndex = db.projects.findIndex(p => p.id === projectId);
-
   if (projectIndex > -1) {
-    db.projects.splice(projectIndex, 1); // 프로젝트 삭제
+    db.projects.splice(projectIndex, 1);
     writeDb(db);
     res.status(200).jsonp({ message: 'Project deleted successfully' });
   } else {
@@ -135,7 +177,6 @@ server.delete('/projects/:id', (req, res) => {
   }
 });
 
-// 참여자 이름 수정
 server.patch('/participants/:id', (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
@@ -162,9 +203,8 @@ server.patch('/projects/:id', (req, res) => {
   const { name } = req.body;
   const db = readDb();
   const project = db.projects.find(p => p.id === parseInt(id));
-
   if (project) {
-    project.name = name; // 전달받은 새 이름으로 변경
+    project.name = name;
     writeDb(db);
     res.status(200).jsonp(project);
   } else {
@@ -172,13 +212,11 @@ server.patch('/projects/:id', (req, res) => {
   }
 });
 
-// 프로젝트에 참여자 추가
 server.post('/projects/:projectId/participants', (req, res) => {
   const { projectId } = req.params;
   const { name } = req.body;
   const db = readDb();
   const project = db.projects.find(p => p.id === parseInt(projectId));
-
   if (project) {
     project.participants = project.participants || [];
     const allIds = [
@@ -187,13 +225,7 @@ server.post('/projects/:projectId/participants', (req, res) => {
       ...db.projects.flatMap(p => p.expenses?.map(e => e.id) || [])
     ].filter(id => id != null);
     const maxId = Math.max(0, ...allIds);
-    
-    const newParticipant = { 
-      id: maxId + 1, 
-      name: name,
-      orderIndex: project.participants.length 
-    };
-    
+    const newParticipant = { id: maxId + 1, name: name, orderIndex: project.participants.length };
     project.participants.push(newParticipant);
     writeDb(db);
     res.status(201).jsonp(newParticipant);
@@ -202,25 +234,19 @@ server.post('/projects/:projectId/participants', (req, res) => {
   }
 });
 
-// --- ✨ [추가] 참여자 순서 업데이트 API ---
 server.post('/projects/:projectId/participants/reorder', (req, res) => {
   const { projectId } = req.params;
-  const { orderedParticipantIds } = req.body; // 순서대로 정렬된 ID 배열
+  const { orderedParticipantIds } = req.body;
   const db = readDb();
   const project = db.projects.find(p => p.id === parseInt(projectId));
-
   if (project && Array.isArray(orderedParticipantIds)) {
-    // ID를 키로, 참여자 객체를 값으로 하는 맵을 만들어 빠른 조회를 가능하게 함
     const participantMap = new Map(project.participants.map(p => [p.id, p]));
-    
-    // 프론트에서 보내준 ID 순서대로 orderIndex를 0부터 다시 부여
     orderedParticipantIds.forEach((id, index) => {
       const participant = participantMap.get(id);
       if (participant) {
         participant.orderIndex = index;
       }
     });
-    
     writeDb(db);
     res.status(200).jsonp(project.participants);
   } else {
@@ -228,13 +254,11 @@ server.post('/projects/:projectId/participants/reorder', (req, res) => {
   }
 });
 
-// --- ✨ [수정] 지출 내역 추가 API (몰아주기 대상 ID 포함) ---
 server.post('/projects/:projectId/expenses', (req, res) => {
   const { projectId } = req.params;
   const newExpenseData = req.body;
   const db = readDb();
   const project = db.projects.find(p => p.id === parseInt(projectId));
-
   if (project) {
     project.expenses = project.expenses || [];
     const allIds = [
@@ -243,7 +267,6 @@ server.post('/projects/:projectId/expenses', (req, res) => {
       ...db.projects.flatMap(p => p.expenses?.map(e => e.id) || [])
     ].filter(id => id != null);
     const maxId = Math.max(0, ...allIds);
-
     const expenseWithId = { ...newExpenseData, id: maxId + 1 };
     project.expenses.push(expenseWithId);
     writeDb(db);
@@ -253,7 +276,6 @@ server.post('/projects/:projectId/expenses', (req, res) => {
   }
 });
 
-// --- ✨ [수정] 정산 결과 계산 API (몰아주기 로직 추가) ---
 server.get('/projects/:projectId/settlement', (req, res) => {
     const { projectId } = req.params;
     const db = readDb();
@@ -265,30 +287,22 @@ server.get('/projects/:projectId/settlement', (req, res) => {
     const participantMap = new Map(participants.map(p => [p.id, p.name]));
 
     if (participants.length === 0) {
-        return res.json({ 
-            totalAmount: 0, participantCount: 0, perPersonAmount: 0, 
-            netTransfers: [], grossTransfers: [] // 반환 형식 통일
-        });
+        return res.json({ totalAmount: 0, participantCount: 0, perPersonAmount: 0, netTransfers: [], grossTransfers: [] });
     }
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
     let totalOwedBy = {};
     participants.forEach(p => { totalOwedBy[p.id] = 0; });
-    
-    // ✨ 총액 정산을 위한 거래 내역 기록 객체
+
     const grossTransfersMap = new Map();
 
     expenses.forEach(expense => {
         const { amount, payer_id, split_method = 'equally', split_details = {}, penny_rounding_target_id, split_participants } = expense;
-        
-        const involvedParticipantIds = (split_participants && split_participants.length > 0)
-            ? split_participants
-            : participants.map(p => p.id);
+        const involvedParticipantIds = (split_participants && split_participants.length > 0) ? split_participants : participants.map(p => p.id);
         const involvedParticipants = participants.filter(p => involvedParticipantIds.includes(p.id));
 
         if (involvedParticipants.length === 0) return;
 
-        // --- 각 지출 항목별 분담액 계산 (이 부분은 총액/순액 모두에게 필요) ---
         let expenseShares = {};
         involvedParticipants.forEach(p => { expenseShares[p.id] = 0 });
 
@@ -326,11 +340,8 @@ server.get('/projects/:projectId/settlement', (req, res) => {
             }
         }
 
-        // --- 계산된 분담액을 각 정산 방식에 맞게 누적 ---
         Object.entries(expenseShares).forEach(([participantId, share]) => {
-            totalOwedBy[participantId] += share; // 순액 정산을 위한 총 분담액 누적
-            
-            // ✨ 총액 정산을 위한 거래 기록
+            totalOwedBy[participantId] += share;
             if (Number(participantId) !== payer_id && share > 0) {
                 const from = participantMap.get(Number(participantId));
                 const to = participantMap.get(payer_id);
@@ -340,8 +351,7 @@ server.get('/projects/:projectId/settlement', (req, res) => {
             }
         });
     });
-    
-    // --- 💰 순액 정산(Net Settlement) 계산 ---
+
     const totalPaidBy = {};
     participants.forEach(p => {
         totalPaidBy[p.id] = expenses.filter(e => e.payer_id === p.id).reduce((sum, e) => sum + e.amount, 0);
@@ -363,8 +373,7 @@ server.get('/projects/:projectId/settlement', (req, res) => {
         if (Math.abs(creditors[0][1]) < 0.01) creditors.shift();
         if (Math.abs(debtors[0][1]) < 0.01) debtors.shift();
     }
-    
-    // --- 💸 총액 정산(Gross Settlement) 결과 변환 ---
+
     const grossTransfers = Array.from(grossTransfersMap.entries()).map(([key, amount]) => {
         const [from, to] = key.split('→');
         return { from, to, amount: Math.round(amount) };
@@ -374,29 +383,24 @@ server.get('/projects/:projectId/settlement', (req, res) => {
         totalAmount,
         participantCount: participants.length,
         perPersonAmount: participants.length > 0 ? Math.round(totalAmount / participants.length) : 0,
-        netTransfers,   // 순액 정산 결과
-        grossTransfers  // 총액 정산 결과
+        netTransfers,
+        grossTransfers
     });
 });
 
-// 참여자 삭제
 server.delete('/participants/:id', (req, res) => {
   const { id } = req.params;
   const participantId = parseInt(id);
   const db = readDb();
   let participantFound = false;
-
   db.projects.forEach(project => {
     const participantIndex = project.participants?.findIndex(p => p.id === participantId);
-    
     if (participantIndex > -1) {
       participantFound = true;
       const isPayer = project.expenses?.some(e => e.payer_id === participantId);
-
       if (isPayer) {
         project.expenses = project.expenses.filter(e => e.payer_id !== participantId);
       }
-      
       project.expenses?.forEach(expense => {
         if (expense.split_method !== 'equally' && expense.split_details?.[participantId]) {
           delete expense.split_details[participantId];
@@ -405,11 +409,9 @@ server.delete('/participants/:id', (req, res) => {
           expense.locked_participant_ids = [];
         }
       });
-
       project.participants.splice(participantIndex, 1);
     }
   });
-
   if (participantFound) {
     writeDb(db);
     res.status(200).jsonp({});
@@ -418,7 +420,6 @@ server.delete('/participants/:id', (req, res) => {
   }
 });
 
-// 지출 내역 삭제
 server.delete('/expenses/:id', (req, res) => {
   const { id } = req.params;
   const db = readDb();
@@ -430,7 +431,6 @@ server.delete('/expenses/:id', (req, res) => {
       expenseFound = true;
     }
   });
-
   if (expenseFound) {
     writeDb(db);
     res.status(200).jsonp({});
@@ -439,25 +439,19 @@ server.delete('/expenses/:id', (req, res) => {
   }
 });
 
-// --- ✨ [수정] 지출 내역 수정 API (몰아주기 대상 ID 포함) ---
 server.patch('/expenses/:id', (req, res) => {
   const { id } = req.params;
   const updatedData = req.body;
   const db = readDb();
   let expenseFound = false;
-
   for (const project of db.projects) {
     const expenseIndex = project.expenses?.findIndex(e => e.id === parseInt(id));
     if (expenseIndex > -1) {
-      project.expenses[expenseIndex] = { 
-        ...project.expenses[expenseIndex], 
-        ...updatedData 
-      };
+      project.expenses[expenseIndex] = { ...project.expenses[expenseIndex], ...updatedData };
       expenseFound = true;
-      break; 
+      break;
     }
   }
-
   if (expenseFound) {
     writeDb(db);
     res.status(200).jsonp(updatedData);
@@ -465,7 +459,6 @@ server.patch('/expenses/:id', (req, res) => {
     res.status(404).jsonp({ error: "Expense not found" });
   }
 });
-
 
 const port = process.env.PORT || 3001;
 server.listen(port, () => {

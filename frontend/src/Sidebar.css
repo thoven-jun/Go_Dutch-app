@@ -262,7 +262,7 @@
   background-color: var(--accent-color-light);
 }
 
-.selection-checkbox {
+.sidebar .selection-checkbox {
   width: 20px;
   height: 20px;
   border: 2px solid #adb5bd;
@@ -274,6 +274,7 @@
   cursor: pointer;
   flex-shrink: 0;
 }
+
 .project-item.selected .selection-checkbox {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
@@ -338,7 +339,6 @@
     z-index: 100;
     transform: translateX(-100%); /* 평소에는 화면 왼쪽 밖에 위치 */
     transition: transform 0.3s ease-in-out;
-    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
   }
   
   /* ✨ [수정] 사이드바가 열렸을 때의 스타일 */

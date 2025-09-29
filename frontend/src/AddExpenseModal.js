@@ -12,8 +12,9 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState('');
   const [splitMethod, setSplitMethod] = useState('equally');
-  const [categories, setCategories] = useState([]);
+  
   const [selectedCategory, setSelectedCategory] = useState('');
+  
   const [validationError, setValidationError] = useState('');
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
   const [splitParticipantIds, setSplitParticipantIds] = useState(new Set());
@@ -25,6 +26,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
+  const categories = project?.categories || []; // ✨
 
   const handleToggleSection = (sectionName) => {
     setOpenSection(prevSection => (prevSection === sectionName ? null : sectionName));
@@ -100,7 +102,10 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
   useEffect(() => {
     if (isOpen) {
-      fetch(`${apiBaseUrl}/categories`).then(res => res.json()).then(data => { setCategories(data); if (data.length > 0) setSelectedCategory(data[0].id); });
+      // ✨ [수정] 카테고리 API 호출 로직 삭제, project.categories에서 기본값 설정
+      if (categories.length > 0) {
+        setSelectedCategory(categories[0].id);
+      }
       setDesc(''); setAmount('0'); setPayerId(''); setSplitMethod('equally');
       setSplitDetails({}); setSplitDetailStrings({}); setValidationError('');
       setLockedParticipants(new Set());
@@ -110,7 +115,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         setSplitParticipantIds(new Set(project.participants.map(p => p.id)));
       }
     }
-  }, [isOpen, project, apiBaseUrl]);
+  }, [isOpen, project, categories]); // ✨ 의존성 배열에 categories 추가
 
   const handleSplitMethodChange = (method) => {
     setSplitMethod(method);

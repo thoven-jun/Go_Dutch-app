@@ -54,10 +54,9 @@ const EmojiPicker = ({ selectedEmoji, onSelect }) => {
   );
 };
 
-function Settings({ apiBaseUrl, showAlert }) {
+function Settings({ apiBaseUrl, showAlert, onUpdate }) {
   const [categories, setCategories] = useState([]);
   const [editing, setEditing] = useState({ id: null, name: '', emoji: '🍔' });
-  // ✨ [수정] 새 카테고리 기본 이모지를 '🍔'으로 변경
   const [newCategory, setNewCategory] = useState({ name: '', emoji: '🍔' });
   const newCategoryNameInputRef = useRef(null);
 
@@ -93,6 +92,7 @@ function Settings({ apiBaseUrl, showAlert }) {
     .then(res => res.json())
     .then(() => {
       fetchCategories();
+      onUpdate();
       handleCancelEditing();
     });
   };
@@ -108,6 +108,7 @@ function Settings({ apiBaseUrl, showAlert }) {
               return res.json().then(err => { throw new Error(err.error) });
             }
             fetchCategories();
+            onUpdate();  
           })
           .catch(err => {
             const message = err.message.includes("in use")
@@ -132,6 +133,7 @@ function Settings({ apiBaseUrl, showAlert }) {
     .then(res => res.json())
     .then(() => {
       fetchCategories();
+      onUpdate();
       setNewCategory({ name: '', emoji: '' });
       if(newCategoryNameInputRef.current) {
         newCategoryNameInputRef.current.focus();

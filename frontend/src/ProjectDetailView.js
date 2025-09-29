@@ -77,7 +77,7 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
           >
             <div className="section-title-group">
               <h2>참여자 ({participants.length}명)</h2>
-              <Link to={`/project/${project.id}/participants`} className="manage-icon-button" onClick={e => e.stopPropagation()}>
+              <Link to={`/project/${project.id}/settings`} className="manage-icon-button" onClick={e => e.stopPropagation()}>
                 <ManageIcon />
               </Link>
             </div>

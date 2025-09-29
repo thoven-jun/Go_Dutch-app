@@ -73,16 +73,24 @@
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
+  /* ✨ [핵심 수정] 모바일에서는 앱 전체가 스크롤되도록 변경 */
+  .app-layout {
+    height: auto;
+    min-height: 100vh; /* 최소 높이를 화면 크기로 지정 */
+    overflow-x: hidden;
+    overflow-y: auto; /* 세로 스크롤 허용 */
+  }
+
   .main-header {
-    padding: 16px 20px; /* ✨ 세로 패딩을 고정값으로 변경하여 높이 일관성 유지 */
-    height: 72px; /* 헤더 높이 고정 */
+    padding: 16px 20px;
+    height: 72px;
     box-sizing: border-box;
   }
   .content-area {
-    padding: 10px 20px 20px 20px;
+    padding: 20px;
+    overflow-y: visible; /* 내부 스크롤을 비활성화하여 페이지 전체 스크롤과 충돌 방지 */
   }
 
-  /* ✨ [수정] 모바일에서만 보이도록 display: flex로 변경하고 중앙 정렬 */
   .hamburger-menu {
     display: flex;
     align-items: center;

@@ -4,7 +4,6 @@ import Sidebar from './Sidebar';
 import Welcome from './Welcome';
 import ProjectDetailView from './ProjectDetailView';
 import SettlementResultView from './SettlementResultView';
-import Settings from './Settings';
 import RenameModal from './RenameModal';
 import DuplicateNameModal from './DuplicateNameModal';
 import CustomAlertModal from './CustomAlertModal';
@@ -12,51 +11,61 @@ import AddExpenseModal from './AddExpenseModal';
 import EditExpenseModal from './EditExpenseModal';
 import CreateProjectModal from './CreateProjectModal';
 import ParticipantManager from './ParticipantManager';
+import ProjectSettings from './ProjectSettings';
 import ParticipantOrderModal from './ParticipantOrderModal';
 import './App.css';
 
+// Settings.js import는 삭제되었습니다.
+
 const MenuIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg> );
 
-// ProjectDetailView Wrapper 수정
 function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
   const { projectId } = useParams();
   const list = Array.isArray(projects) ? projects : Object.values(projects || {});
   const project = list.find(p => p.id === parseInt(projectId));
-  
+
   if (!project) {
     return <div>프로젝트를 로딩 중이거나, 유효하지 않은 프로젝트입니다.</div>;
   }
-
-  // ✨ 전달받은 participantListStates를 사용하여 현재 프로젝트의 확장 상태를 결정합니다.
   const isExpanded = participantListStates[projectId] !== false;
 
-  return <ProjectDetailView 
-    project={project} 
+  return <ProjectDetailView
+    project={project}
     onUpdate={onUpdate}
     onOpenRenameModal={onOpenRenameModal}
-    onOpenDuplicateModal={onOpenDuplicateModal} 
+    onOpenDuplicateModal={onOpenDuplicateModal}
     showAlert={showAlert}
     closeAlert={closeAlert}
     openAddExpenseModal={openAddExpenseModal}
     openEditExpenseModal={openEditExpenseModal}
     apiBaseUrl={apiBaseUrl}
-    // ✨ 계산된 상태와, projectId가 적용된 핸들러를 전달합니다.
-    isParticipantsExpanded={isExpanded} 
+    isParticipantsExpanded={isExpanded}
     onToggleParticipants={() => onToggleParticipants(projectId)}
   />;
 }
 
-// ParticipantManager Wrapper (기존과 동일)
-function ParticipantManagerWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, closeAlert, apiBaseUrl, onOpenOrderModal }) {
-  return <ParticipantManager 
-    projects={projects} 
-    onUpdate={onUpdate} 
-    showAlert={showAlert} 
-    onOpenDuplicateModal={onOpenDuplicateModal} 
-    closeAlert={closeAlert} 
+// ✨ 프로젝트 설정 페이지 Wrapper
+function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal }) {
+  return <ProjectSettings
+    projects={projects}
+    onUpdate={onUpdate}
+    showAlert={showAlert}
+    onOpenDuplicateModal={onOpenDuplicateModal}
     apiBaseUrl={apiBaseUrl}
     onOpenOrderModal={onOpenOrderModal}
   />;
+}
+
+// ✨ 참여자 목록 페이지 Wrapper
+function ParticipantManagerWrapper({ projects, onUpdate, apiBaseUrl, onOpenOrderModal }) {
+    const { projectId } = useParams();
+    const project = projects.find(p => p.id === parseInt(projectId));
+    return <ParticipantManager
+      project={project}
+      onUpdate={onUpdate}
+      apiBaseUrl={apiBaseUrl}
+      onOpenOrderModal={onOpenOrderModal}
+    />;
 }
 
 function AppContent() {
@@ -89,11 +98,10 @@ function AppContent() {
   const openOrderModal = (project) => setOrderModalInfo({ isOpen: true, project });
   const closeOrderModal = () => setOrderModalInfo({ isOpen: false, project: null });
 
-  // ... (showAlert, closeAlert, Modal 핸들러, fetchProjects 등 다른 함수들은 기존과 동일)
   const showAlert = (title, message, onConfirm = null) => {
     setAlertInfo({ isOpen: true, title, message, onConfirm });
   };
-  
+
   const closeAlert = () => {
     setAlertInfo({ isOpen: false, title: '', message: '', onConfirm: null });
   };
@@ -109,7 +117,7 @@ function AppContent() {
   const closeEditExpenseModal = () => setEditExpenseModalInfo({ isOpen: false, project: null, expense: null });
 
   const openCreateProjectModal = () => setIsCreateProjectModalOpen(true);
-  const closeCreateProjectModal = () => setIsCreateProjectModalOpen(false);  
+  const closeCreateProjectModal = () => setIsCreateProjectModalOpen(false);
 
   const fetchProjects = useCallback(() => {
     fetch(`${apiBaseUrl}/projects`)
@@ -176,17 +184,17 @@ function AppContent() {
       });
     });
   };
-  
+
   const handleOpenRenameModal = (projectId, currentName) => {
     setRenameModalInfo({ isOpen: true, projectId, currentName });
   };
 
   const handleOpenDuplicateModal = (duplicates, newName, projectId, editingParticipantId = null) => {
-    setDuplicateModalInfo({ 
-      isOpen: true, 
-      duplicates, 
-      newName, 
-      projectId, 
+    setDuplicateModalInfo({
+      isOpen: true,
+      duplicates,
+      newName,
+      projectId,
       editingParticipantId
     });
   };
@@ -254,8 +262,7 @@ function AppContent() {
       return newSelected;
     });
   };
-  
-  // ✨ [1/2] toggleSelectionMode 함수를 useCallback으로 감싸줍니다.
+
   const toggleSelectionMode = useCallback(() => {
     setIsSelectionMode(prev => !prev);
     setSelectedProjects(new Set());
@@ -273,7 +280,7 @@ function AppContent() {
         Promise.all(deletePromises)
           .then(() => {
             fetchProjects();
-            toggleSelectionMode(); // 삭제 후 선택 모드 종료
+            toggleSelectionMode();
             navigate('/');
             closeAlert();
           })
@@ -283,9 +290,8 @@ function AppContent() {
           });
       }
     );
-  };  
+  };
 
-  // ✨ [2/2] 사이드바가 접힐 때 선택 모드를 끄는 useEffect를 추가합니다.
   useEffect(() => {
     if (isSidebarCollapsed && isSelectionMode) {
       toggleSelectionMode();
@@ -310,10 +316,9 @@ function AppContent() {
           onProjectSelect={handleProjectSelect}
           onBulkDelete={handleBulkDelete}
         />
-        
+
         <main className="main-content">
           <header className="main-header">
-            {/* ✨ [추가] 모바일에서만 보이는 햄버거 메뉴 버튼 */}
             <button className="hamburger-menu" onClick={() => setIsMobileSidebarOpen(true)}>
               <MenuIcon />
             </button>
@@ -322,48 +327,52 @@ function AppContent() {
           <div className="content-area">
               <Routes>
                   <Route path="/" element={<Welcome />} />
-                  <Route 
-                    path="/project/:projectId" 
-                    element={<ProjectDetailWrapper 
-                      projects={projects} 
-                      onUpdate={fetchProjects} 
+                  <Route
+                    path="/project/:projectId"
+                    element={<ProjectDetailWrapper
+                      projects={projects}
+                      onUpdate={fetchProjects}
                       onOpenRenameModal={handleOpenRenameModal}
                       onOpenDuplicateModal={handleOpenDuplicateModal}
-                      showAlert={showAlert} 
+                      showAlert={showAlert}
                       closeAlert={closeAlert}
-                      openAddExpenseModal={openAddExpenseModal}                    
+                      openAddExpenseModal={openAddExpenseModal}
                       openEditExpenseModal={openEditExpenseModal}
                       participantListStates={participantListStates}
                       onToggleParticipants={handleToggleParticipants}
                       apiBaseUrl={apiBaseUrl}
-                    />} 
+                    />}
                   />
                   <Route
                     path="/project/:projectId/participants"
                     element={<ParticipantManagerWrapper
                       projects={projects}
                       onUpdate={fetchProjects}
-                      showAlert={showAlert}
-                      onOpenDuplicateModal={handleOpenDuplicateModal}
-                      closeAlert={closeAlert}
                       apiBaseUrl={apiBaseUrl}
                       onOpenOrderModal={openOrderModal}
                     />}
                   />
-                  <Route 
-                    path="/project/:projectId/settlement" 
-                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} />}
+                  <Route
+                    path="/project/:projectId/settings"
+                    element={<ProjectSettingsWrapper
+                      projects={projects}
+                      onUpdate={fetchProjects}
+                      showAlert={showAlert}
+                      onOpenDuplicateModal={handleOpenDuplicateModal}
+                      apiBaseUrl={apiBaseUrl}
+                      onOpenOrderModal={openOrderModal}
+                    />}
                   />
-                  <Route 
-                    path="/settings" 
-                    element={<Settings apiBaseUrl={apiBaseUrl} showAlert={showAlert} />} 
+                  <Route
+                    path="/project/:projectId/settlement"
+                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} />}
                   />
                 </Routes>
           </div>
         </main>
       </div>
 
-      <RenameModal 
+      <RenameModal
         isOpen={renameModalInfo.isOpen}
         onClose={() => setRenameModalInfo({ isOpen: false })}
         onRename={(newName) => handleUpdateProject(renameModalInfo.projectId, newName)}
@@ -376,7 +385,7 @@ function AppContent() {
         duplicates={duplicateModalInfo.duplicates}
         newName={duplicateModalInfo.newName}
         editingParticipantId={duplicateModalInfo.editingParticipantId}
-      />      
+      />
       <CustomAlertModal
         isOpen={alertInfo.isOpen}
         onClose={closeAlert}

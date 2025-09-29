@@ -12,8 +12,10 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState('');
   const [splitMethod, setSplitMethod] = useState('equally');
-  const [categories, setCategories] = useState([]);
+  
+  // ✨ [수정] 카테고리 state를 project prop에서 직접 사용하도록 변경
   const [selectedCategory, setSelectedCategory] = useState('');
+  
   const [validationError, setValidationError] = useState('');
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
   const [splitParticipantIds, setSplitParticipantIds] = useState(new Set());
@@ -25,6 +27,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
+  const categories = project?.categories || []; // ✨
 
   const handleToggleSection = (sectionName) => {
     setOpenSection(prevSection => (prevSection === sectionName ? null : sectionName));
@@ -76,10 +79,10 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
 
   useEffect(() => {
     if (isOpen && expense) {
-      fetch(`${apiBaseUrl}/categories`).then(res => res.json()).then(data => setCategories(data));
+      // ✨ [수정] 카테고리 API 호출 로직 삭제
       setDesc(expense.desc);
       setAmount(formatNumber(expense.amount));
-      setPayerId(expense.payer_id || ''); 
+      setPayerId(expense.payer_id || '');
       const method = expense.split_method || 'equally';
       setSplitMethod(method);
       setSelectedCategory(expense.category_id || '');
@@ -94,7 +97,7 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
       setOpenSection('basic');
       if (expense.split_participants && expense.split_participants.length > 0) { setSplitParticipantIds(new Set(expense.split_participants)); } else { setSplitParticipantIds(new Set(participants.map(p => p.id))); }
     }
-  }, [isOpen, expense, participants, apiBaseUrl]);
+  }, [isOpen, expense, participants]); // ✨ 의존성 배열에서 apiBaseUrl 제거
   
   const handleSplitMethodChange = (method) => { setSplitMethod(method); setLockedParticipants(new Set()); setDefaultSplits(method); }
   
