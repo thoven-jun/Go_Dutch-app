@@ -13,6 +13,7 @@ import CreateProjectModal from './CreateProjectModal';
 import ParticipantManager from './ParticipantManager';
 import ProjectSettings from './ProjectSettings';
 import ParticipantOrderModal from './ParticipantOrderModal';
+import DestructiveActionModal from './DestructiveActionModal';
 import './App.css';
 
 // Settings.js import는 삭제되었습니다.
@@ -45,14 +46,17 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDup
 }
 
 // ✨ 프로젝트 설정 페이지 Wrapper
-function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal }) {
+function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal, closeAlert, openDestructiveModal, closeDestructiveModal }) {
   return <ProjectSettings
     projects={projects}
     onUpdate={onUpdate}
     showAlert={showAlert}
+    openDestructiveModal={openDestructiveModal}
+    closeDestructiveModal={closeDestructiveModal}
     onOpenDuplicateModal={onOpenDuplicateModal}
     apiBaseUrl={apiBaseUrl}
     onOpenOrderModal={onOpenOrderModal}
+    closeAlert={closeAlert}
   />;
 }
 
@@ -76,6 +80,7 @@ function AppContent() {
   const [renameModalInfo, setRenameModalInfo] = useState({ isOpen: false, projectId: null, currentName: '' });
   const [duplicateModalInfo, setDuplicateModalInfo] = useState({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [destructiveModalInfo, setDestructiveModalInfo] = useState({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null });
   const [addExpenseModalInfo, setAddExpenseModalInfo] = useState({ isOpen: false, project: null });
   const [editExpenseModalInfo, setEditExpenseModalInfo] = useState({ isOpen: false, project: null, expense: null });
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
@@ -114,6 +119,13 @@ function AppContent() {
 
   const closeAlert = () => {
     setAlertInfo({ isOpen: false, title: '', message: '', onConfirm: null });
+  };
+
+  const openDestructiveModal = ({ title, mainContent, consequences, confirmText, onConfirm }) => {
+    setDestructiveModalInfo({ isOpen: true, title, mainContent, consequences, confirmText, onConfirm });
+  };
+  const closeDestructiveModal = () => {
+    setDestructiveModalInfo({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null });
   };
 
   const openAddExpenseModal = (project) => {
@@ -388,6 +400,9 @@ function AppContent() {
                       onOpenDuplicateModal={handleOpenDuplicateModal}
                       apiBaseUrl={apiBaseUrl}
                       onOpenOrderModal={openOrderModal}
+                      closeAlert={closeAlert}
+                      openDestructiveModal={openDestructiveModal}
+                      closeDestructiveModal={closeDestructiveModal}
                     />}
                   />
                   <Route
@@ -446,6 +461,15 @@ function AppContent() {
         project={orderModalInfo.project}
         onSave={fetchProjects}
         apiBaseUrl={apiBaseUrl}
+      />
+      <DestructiveActionModal
+        isOpen={destructiveModalInfo.isOpen}
+        onClose={closeDestructiveModal}
+        onConfirm={destructiveModalInfo.onConfirm}
+        title={destructiveModalInfo.title}
+        mainContent={destructiveModalInfo.mainContent}
+        consequences={destructiveModalInfo.consequences}
+        confirmText={destructiveModalInfo.confirmText}
       />
     </>
   );

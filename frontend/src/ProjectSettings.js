@@ -35,7 +35,7 @@ const EmojiPicker = ({ selectedEmoji, onSelect }) => {
 };
 
 
-function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal }) {
+function ProjectSettings({ projects, onUpdate, showAlert, openDestructiveModal, closeDestructiveModal, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal, closeAlert }) { 
   const { projectId } = useParams();
   const project = projects.find(p => p.id === parseInt(projectId));
 
@@ -51,6 +51,7 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
   const [selectedParticipants, setSelectedParticipants] = useState(new Set());
   const [isCategorySelectionMode, setCategorySelectionMode] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState(new Set());
+  const canDeleteParticipant = participants.length > 2;
 
   useEffect(() => {
     if (project) {
@@ -60,7 +61,6 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
   }, [project, projects]);
   
   useEffect(() => {
-    // 탭이 변경되면, 모든 수정/선택 모드를 취소합니다.
     handleCancelEditingParticipant();
     handleCancelEditingCategory();
     setParticipantSelectionMode(false);
@@ -70,7 +70,48 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
   }, [activeTab]);
 
   const handleAddParticipant = (e) => { e.preventDefault(); if (!newParticipant.trim()) return; const duplicates = participants.filter(p => p.name === newParticipant.trim()); if (duplicates.length > 0) { onOpenDuplicateModal(duplicates, newParticipant.trim(), projectId); setNewParticipant(''); } else { fetch(`${apiBaseUrl}/projects/${projectId}/participants`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newParticipant.trim() }) }).then(() => { setNewParticipant(''); onUpdate(); }); } };
-  const handleDeleteParticipant = (participant) => { const isPayer = project.expenses?.some(e => e.payer_id === participant.id); const title = isPayer ? '결제 내역 함께 삭제' : '참여자 삭제'; const message = isPayer ? `'${participant.name}'님과 '${participant.name}'님이 결제한 모든 지출 내역을 함께 삭제합니다. 이 작업은 되돌릴 수 없습니다. 정말 삭제하시겠습니까?` : `'${participant.name}'님을 삭제하면, 금액 및 비율 지정 방식의 지출 항목은 '균등 부담' 방식으로 모두 조정됩니다.이 작업은 되돌릴 수 없습니다.계속하시겠습니까?`; showAlert(title, message, () => { fetch(`${apiBaseUrl}/participants/${participant.id}`, { method: 'DELETE' }).then(res => { if (res.ok) { onUpdate(); } else { console.error("삭제 실패:", res.statusText); } }); }); };
+  
+  const handleDeleteParticipant = (participant) => {
+    if (!canDeleteParticipant) {
+      showAlert('삭제 불가', '프로젝트에 참여하는 사람은 최소 2명 이상이어야 합니다.');
+      return;
+    }
+
+    const isPayer = project.expenses?.some(e => e.payer_id === participant.id);
+    
+    // 모달에 표시될 주의사항 목록을 생성합니다.
+    let consequences = ["이 작업은 되돌릴 수 없으며, 참여자는 영구적으로 삭제됩니다."];
+    if (isPayer) {
+      consequences.push(`'${participant.name}'님이 결제자로 등록된 지출 내역들도 함께 삭제됩니다.`);
+    }
+    consequences.push("참여자가 삭제되면 일부 지출 내역의 분배 방식이 '균등 부담'으로 조정될 수 있습니다.");
+
+    // 삭제를 수행하는 비동기 함수
+    const performDelete = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/participants/${participant.id}`, { method: 'DELETE' });
+        if (response.ok) {
+          onUpdate();
+        } else {
+          console.error("삭제 실패:", response.statusText);
+        }
+      } catch (error) {
+        console.error("삭제 중 네트워크 오류:", error);
+      } finally {
+        closeDestructiveModal(); // 새 모달을 닫습니다.
+      }
+    };
+    
+    // 새로운 경고 모달을 엽니다.
+    openDestructiveModal({
+      title: `'${participant.name}' 참여자 삭제`,
+      mainContent: '선택한 참여자를 정말 삭제하시겠습니까?',
+      consequences: consequences,
+      confirmText: '삭제',
+      onConfirm: performDelete
+    });
+  };
+
   const handleStartEditingParticipant = (participant) => { setEditingParticipant({ id: participant.id, name: participant.name }); };
   const handleCancelEditingParticipant = () => { setEditingParticipant({ id: null, name: '' }); };
   const handleSaveEditingParticipant = () => { const newName = editingParticipant.name.trim(); if (!newName) return; const otherParticipants = participants.filter(p => p.id !== editingParticipant.id); const duplicates = otherParticipants.filter(p => p.name === newName); if (duplicates.length > 0) { showAlert('동명이인 발생', `'${newName}'님은 이미 참여자 목록에 있습니다.\n그래도 동명이인으로 처리하시겠습니까?`, () => { onOpenDuplicateModal(duplicates, newName, projectId, editingParticipant.id); handleCancelEditingParticipant(); }); return; } fetch(`${apiBaseUrl}/participants/${editingParticipant.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName }), }).then(() => { handleCancelEditingParticipant(); onUpdate(); }); };
@@ -85,8 +126,47 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
     fetch(`${apiBaseUrl}/projects/${projectId}/categories`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newCategoryName, emoji: newCategory.emoji }), }).then(res => res.json()).then(() => { onUpdate(); setNewCategory({ name: '', emoji: '🍔' }); if(newCategoryNameInputRef.current) { newCategoryNameInputRef.current.focus(); } }); };
   const handleParticipantSelect = (id) => { setSelectedParticipants(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); return newSet; }); };
   const handleCategorySelect = (id) => { setSelectedCategories(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); return newSet; }); };
-  const handleBulkDeleteParticipants = () => { showAlert(`${selectedParticipants.size}명 삭제`, '선택한 참여자를 모두 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.', () => { const deletePromises = Array.from(selectedParticipants).map(id => fetch(`${apiBaseUrl}/participants/${id}`, { method: 'DELETE' })); Promise.all(deletePromises).then(() => { onUpdate(); setParticipantSelectionMode(false); setSelectedParticipants(new Set()); }).catch(err => console.error("일괄 삭제 실패:", err)); }); };
-  const handleBulkDeleteCategories = () => { showAlert(`${selectedCategories.size}개 삭제`, '선택한 카테고리를 모두 삭제하시겠습니까?', () => { const deletePromises = Array.from(selectedCategories).map(id => fetch(`${apiBaseUrl}/categories/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: projectId }) })); Promise.all(deletePromises).then(responses => { const failed = responses.filter(res => !res.ok); if (failed.length > 0) { showAlert('삭제 실패', '사용 중인 카테고리가 포함되어 있어 일부 항목을 삭제할 수 없습니다.'); } onUpdate(); setCategorySelectionMode(false); setSelectedCategories(new Set()); }).catch(err => console.error("일괄 삭제 실패:", err)); }); };
+  const handleBulkDeleteParticipants = () => {
+    if (participants.length - selectedParticipants.size < 2) {
+      showAlert('삭제 불가', `선택한 ${selectedParticipants.size}명을 삭제하면 참여자가 2명 미만이 됩니다. 최소 2명의 참여자는 유지되어야 합니다.`);
+      return;
+    }
+
+    const selectedPayers = project.expenses?.filter(e => selectedParticipants.has(e.payer_id));
+    const hasPayers = selectedPayers && selectedPayers.length > 0;
+
+    let consequences = ["이 작업은 되돌릴 수 없으며, 선택한 참여자는 영구적으로 삭제됩니다."];
+    if (hasPayers) {
+      consequences.push("결제자로 등록된 참여자를 삭제하면, 해당 지출 내역들도 함께 삭제됩니다.");
+    }
+    consequences.push("일부 지출 내역의 분배 방식이 '균등 부담'으로 조정될 수 있습니다.");
+    
+    const performBulkDelete = async () => {
+      try {
+        const deletePromises = Array.from(selectedParticipants).map(id => 
+          fetch(`${apiBaseUrl}/participants/${id}`, { method: 'DELETE' })
+        );
+        await Promise.all(deletePromises);
+        onUpdate();
+        setParticipantSelectionMode(false);
+        setSelectedParticipants(new Set());
+      } catch (error) {
+        console.error("일괄 삭제 중 오류 발생:", error);
+      } finally {
+        closeDestructiveModal(); // 이제 새 모달을 닫습니다.
+      }
+    };
+
+    openDestructiveModal({
+      title: `${selectedParticipants.size}명 일괄 삭제`,
+      mainContent: '선택한 참여자를 정말 삭제하시겠습니까?',
+      consequences: consequences,
+      confirmText: '삭제',
+      onConfirm: performBulkDelete
+    });
+  };
+
+  const handleBulkDeleteCategories = () => { showAlert(`${selectedCategories.size}개 삭제`, '선택한 카테고리를 모두 삭제하시겠습니까?', () => { const deletePromises = Array.from(selectedParticipants).map(id => fetch(`${apiBaseUrl}/categories/${id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: projectId }) })); Promise.all(deletePromises).then(responses => { const failed = responses.filter(res => !res.ok); if (failed.length > 0) { showAlert('삭제 실패', '사용 중인 카테고리가 포함되어 있어 일부 항목을 삭제할 수 없습니다.'); } onUpdate(); setCategorySelectionMode(false); setSelectedCategories(new Set()); }).catch(err => console.error("일괄 삭제 실패:", err)); }); };
 
   if (!project) return <div>프로젝트를 불러오는 중...</div>;
 
@@ -113,10 +193,15 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
                 <div className="section-header">
                   <h3>참여자 목록 ({participants.length}명)</h3>
                   <div className="button-group">
-                    {/* ▼▼▼▼▼ '순서 편집' 버튼에 handleCancelEditingParticipant() 추가 ▼▼▼▼▼ */}
                     {!isParticipantSelectionMode && <button onClick={() => { handleCancelEditingParticipant(); onOpenOrderModal(project); }} className="reorder-button">순서 편집</button>}
-                    {/* ▼▼▼▼▼ '선택' 버튼에 handleCancelEditingParticipant() 추가 ▼▼▼▼▼ */}
-                    <button onClick={() => { handleCancelEditingParticipant(); setParticipantSelectionMode(!isParticipantSelectionMode); setSelectedParticipants(new Set()); }} className="reorder-button">{isParticipantSelectionMode ? '완료' : '선택'}</button>
+                    <button 
+                      onClick={() => { handleCancelEditingParticipant(); setParticipantSelectionMode(!isParticipantSelectionMode); setSelectedParticipants(new Set()); }} 
+                      className="reorder-button"
+                      disabled={!canDeleteParticipant}
+                      title={!canDeleteParticipant ? "참여자가 2명 이하일 때는 삭제할 수 없습니다." : ""}
+                    >
+                      {isParticipantSelectionMode ? '완료' : '선택'}
+                    </button>
                   </div>
                 </div>
                 <p className="section-description">프로젝트에 참여하는 사람들의 목록입니다.</p>
@@ -127,7 +212,6 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
                     <div className={`selection-checkbox ${selectedParticipants.has(p.id) ? 'selected' : ''}`}> {selectedParticipants.has(p.id) && <CheckIcon />} </div>
                     {editingParticipant.id === p.id ? (
                       <div className="edit-form">
-                        {/* ▼▼▼▼▼ [수정] className="name-input" 추가 ▼▼▼▼▼ */}
                         <input
                           type="text"
                           className="name-input"
@@ -141,7 +225,17 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
                     ) : (
                       <>
                         <span className="participant-name">{p.name}</span>
-                        <div className="participant-actions"> <button onClick={() => handleStartEditingParticipant(p)} className="action-button"><EditIcon /></button> <button onClick={() => handleDeleteParticipant(p)} className="action-button"><DeleteIcon /></button> </div>
+                        <div className="participant-actions"> 
+                          <button onClick={() => handleStartEditingParticipant(p)} className="action-button"><EditIcon /></button> 
+                          <button 
+                            onClick={() => handleDeleteParticipant(p)} 
+                            className="action-button" 
+                            disabled={!canDeleteParticipant}
+                            title={!canDeleteParticipant ? "참여자가 2명 이하일 때는 삭제할 수 없습니다." : ""}
+                          >
+                            <DeleteIcon />
+                          </button> 
+                        </div>
                       </>
                     )}
                   </li>
