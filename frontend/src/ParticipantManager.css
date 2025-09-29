@@ -101,7 +101,7 @@
 .scrollable-list::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
 .scrollable-list::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
 
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem; }
 .section-description { margin-top: -8px; margin-bottom: 16px; color: var(--text-secondary); font-size: 0.9em; }
 .reorder-button {
   padding: 6px 12px; font-size: 0.9em; font-weight: 500; border-radius: 5px; cursor: pointer;

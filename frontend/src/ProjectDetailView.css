@@ -4,7 +4,11 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   height: 100%;
   display: flex;
-  flex-direction: column; /* 아이템을 세로로 쌓음 */
+  flex-direction: column;
+  /* ▼▼▼▼▼ 아래 3줄 추가 ▼▼▼▼▼ */
+  max-width: 850px;  /* 최대 너비 */
+  min-width: 600px;  /* 최소 너비 */
+  margin: 0 auto;    /* 화면 중앙 정렬 */
 }
 .detail-header {
   display: flex;
@@ -633,7 +637,7 @@
 .detail-title-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0px;
   min-width: 0; /* ✨ [추가] 자식 요소의 말줄임 처리를 위해 필수 */
 }
 
@@ -641,7 +645,8 @@
 .title-edit-button {
   background: none;
   border: none;
-  padding: 6px;
+  padding: 3px;
+  margin-left: 8px;
   cursor: pointer;
   color: #adb5bd; /* 기본 아이콘 색상 */
   line-height: 1;
@@ -659,12 +664,19 @@
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
+  .detail-container {
+    min-width: 0; /* 최소 너비 제한 해제 */
+    width: 100%;  /* 화면 너비에 맞춤 */
+    margin: 0;    /* 중앙 정렬 해제 */
+    height: calc(100vh - 110px);
+  }
   .detail-header {
-    padding: 16px 20px;
-    /* ✨ [수정] 아래 3줄을 삭제하여 가로 정렬을 복원합니다. */
-    /* flex-direction: column; */
-    /* align-items: flex-start; */
-    /* gap: 12px; */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 17px 25px; /* 패딩 조정 */
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0; /* 헤더는 줄어들지 않음 */
   }
   .content-body {
     padding: 20px;

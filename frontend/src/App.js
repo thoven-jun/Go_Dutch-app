@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Welcome from './Welcome';
 import ProjectDetailView from './ProjectDetailView';
@@ -27,7 +27,7 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDup
   if (!project) {
     return <div>프로젝트를 로딩 중이거나, 유효하지 않은 프로젝트입니다.</div>;
   }
-  const isExpanded = participantListStates[projectId] !== false;
+  const isExpanded = participantListStates[projectId] === true;
 
   return <ProjectDetailView
     project={project}
@@ -87,6 +87,16 @@ function AppContent() {
   const [selectedProjects, setSelectedProjects] = useState(new Set());
 
   const navigate = useNavigate();
+
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleToggleParticipants = (projectId) => {
     setParticipantListStates(prevStates => ({
@@ -330,7 +340,16 @@ function AppContent() {
             <button className="hamburger-menu" onClick={() => setIsMobileSidebarOpen(true)}>
               <MenuIcon />
             </button>
-            <h1>Go Dutch</h1>
+            {isMobileView ? (
+              <div className="main-logo-link">
+                <h1>Go Dutch</h1>
+              </div>
+            ) : (
+              <Link to="/" className="main-logo-link">
+                <h1>Go Dutch</h1>
+              </Link>
+            )}
+            
           </header>
           <div className="content-area">
               <Routes>
