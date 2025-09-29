@@ -30,7 +30,6 @@
   font-size: 1.5em;
   color: #4a5568;
   margin: 0;
-  /* ✨ [추가] 글자의 불필요한 상하 여백을 제거하여 정렬 기준을 맞춥니다. */
   line-height: 1; 
 }
 
@@ -90,6 +89,7 @@
     padding: 16px 20px;
     height: 72px;
     box-sizing: border-box;
+    gap: 7px;
   }
   .content-area {
     padding: 20px;
