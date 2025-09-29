@@ -121,7 +121,7 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  padding-right: 10px; /* 스크롤바 공간 확보 */
+  scrollbar-gutter: stable;
 }
 /* ✨ [추가] 지출 내역 스크롤바 디자인 */
 .expense-list::-webkit-scrollbar {
