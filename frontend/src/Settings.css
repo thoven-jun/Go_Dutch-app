@@ -1,215 +1,92 @@
+/* src/Settings.css */
+
 .settings-container {
-  background-color: white;
+  background-color: var(--bg-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   max-width: 800px;
-  /* ✨ [핵심] 이 부분이 데스크탑 화면에서 중앙 정렬을 담당합니다. */
   margin: 40px auto;
+  color: var(--text-primary);
+  height: calc(100vh - 80px);
+  max-height: 850px;
 }
+.settings-header { padding: 20px 40px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+.settings-header h1 { margin: 0; font-size: 1.5em; }
 
-.settings-header {
-  padding: 20px 40px;
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
+/* ▼▼▼▼▼ [수정] 누락되었던 '.'을 추가합니다. ▼▼▼▼▼ */
+.settings-layout { display: flex; flex-grow: 1; min-height: 0; }
+/* ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲ */
+
+.settings-nav { flex-basis: 200px; flex-shrink: 0; padding: 20px; border-right: 1px solid var(--border-color); }
+.settings-nav button {
+  width: 100%; display: block; padding: 12px 16px; background: none; border: none;
+  border-radius: 6px; text-align: left; font-size: 1em; font-weight: 500;
+  cursor: pointer; color: var(--text-secondary); transition: all 0.2s;
 }
+.settings-nav button:hover { background-color: var(--hover-bg); }
+.settings-nav button.active { background-color: var(--accent-color-light); color: var(--primary-color); font-weight: 600; }
+.settings-nav button:disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent; }
 
-.settings-header h1 {
-  margin: 0;
-  font-size: 1.5em;
-}
+.settings-panel { flex-grow: 1; padding: 30px 40px; overflow-y: auto; }
+.settings-section h2 { margin-top: 0; margin-bottom: 8px; }
+.section-description { margin-top: 0; margin-bottom: 24px; color: var(--text-secondary); font-size: 0.9em; }
 
-.settings-content {
-  padding: 30px 40px;
-  flex-grow: 1;
-  overflow-y: auto;
-}
-
-.settings-section {
-  max-width: 600px;
-  /* ✨ [추가] 섹션 자체를 부모 영역 안에서 중앙 정렬합니다. */
-  margin: 0 auto;
-}
-
-.settings-section h2 {
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-.section-description {
-  margin-top: 0;
-  margin-bottom: 24px;
-  color: var(--text-secondary);
-  font-size: 0.9em;
-}
-
-.category-list {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 24px;
-}
-
-.category-item {
+.theme-selector {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.category-info {
-  display: flex;
-  align-items: center;
   gap: 12px;
+  background-color: var(--bg-secondary-color);
+  border-radius: 8px;
+  padding: 8px;
 }
-
-.category-emoji {
-  font-size: 1.2em;
-}
-
-.category-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-button {
-  background: none;
-  border: none;
-  padding: 6px;
-  cursor: pointer;
-  color: #868e96;
-  border-radius: 50%;
-  transition: all 0.2s;
+.theme-option {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.action-button:hover {
-  color: #212529;
-  background-color: #e9ecef;
-}
-
-/* --- 수정/추가 폼 스타일 --- */
-.edit-form, .add-category-form {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  width: 100%;
-}
-
-.edit-form .name-input,
-.add-category-form .name-input {
-  flex-grow: 1;
-}
-
-.edit-form input,
-.add-category-form input {
-  padding: 8px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 0.95em;
-  /* ✨ [추가] 높이 통일을 위한 스타일 */
-  height: 35px;
-  box-sizing: border-box;
-}
-.edit-form input:focus,
-.add-category-form input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px var(--accent-color-light);
-}
-
-.action-button.save-button { color: var(--primary-color); }
-.action-button.cancel-button { color: var(--text-secondary); }
-
-.add-button {
-  padding: 8px 16px;
+  padding: 12px;
   border: none;
-  background-color: var(--primary-color);
-  color: white;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.95em;
   font-weight: 500;
-  transition: background-color 0.2s;
-  flex-shrink: 0; /* ✨ [추가] 버튼 너비가 줄어들지 않도록 설정 */
-  height: 35px;
-}
-.add-button:hover {
-  background-color: var(--primary-color-light);
-}
-
-/* --- ✨ [추가] 이모지 피커 스타일 --- */
-.emoji-picker {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.emoji-picker-button {
-  width: 60px; /* ✨ 너비 살짝 조정 */
-  height: 35px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background-color: white;
-  cursor: pointer;
-  /* ✨ [수정] flexbox로 이모지와 아이콘 정렬 */
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* 양쪽 끝으로 배치 */
-  padding: 0 8px; /* 내부 여백 */
-  transition: border-color 0.2s;
-}
-.emoji-picker-button .selected-emoji {
-  font-size: 1.5em;
-}
-.emoji-picker-button svg {
+  transition: all 0.2s ease-in-out;
+  background-color: transparent;
   color: var(--text-secondary);
 }
-
-.emoji-picker-button:hover {
-  border-color: #adb5bd;
-}
-
-.emoji-picker-dropdown {
-  position: absolute;
-  bottom: 100%;
-  left: 0;
-  margin-bottom: 8px;
-  background-color: white;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-  z-index: 10;
-}
-
-.emoji-option {
-  background: none;
-  border: none;
-  border-radius: 4px;
-  font-size: 1.5em;
-  padding: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.emoji-option:hover {
-  background-color: var(--bg-secondary-color);
+.theme-option.active {
+  background-color: var(--bg-color);
+  color: var(--primary-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 @media (max-width: 768px) {
-  .settings-container {
-    margin: 0;
-    box-shadow: none;
-    border-radius: 0;
+  .settings-container { margin: 0; box-shadow: none; border-radius: 0; height: auto; max-height: none; }
+  .settings-header { padding: 16px 20px; }
+  .settings-layout { flex-direction: column; }
+  .settings-nav {
+    flex-basis: auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    padding: 0; /* 내부 여백 제거 */
   }
-  .settings-header {
-    padding: 16px 20px;
+  .settings-nav button {
+    flex: 1;
+    text-align: center;
+    border-radius: 0; /* 버튼의 둥근 모서리 제거 */
+    border-bottom: 2px solid transparent; /* 기본 상태의 하단 선 (투명) */
+    margin-bottom: -1px; /* 부모의 border와 겹치도록 처리 */
+    padding: 12px 8px;
+    background-color: transparent; /* 배경색 제거 */
   }
-  .settings-content {
-    padding: 20px;
+  .settings-nav button.active {
+    background-color: transparent; /* 활성 상태 배경색 제거 */
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color); /* 활성 상태 하단 선 (파란색) */
+    box-shadow: none; /* 그림자 제거 */
   }
+  .settings-panel { padding: 20px; }
 }
