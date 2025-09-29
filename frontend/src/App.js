@@ -268,6 +268,14 @@ function AppContent() {
     setSelectedProjects(new Set());
   }, [])
 
+  const handleCloseMobileSidebar = () => {
+    setIsMobileSidebarOpen(false);
+    if (isSelectionMode) {
+      // toggleSelectionMode를 호출하여 선택 모드를 끄고, 선택된 프로젝트 목록도 초기화합니다.
+      toggleSelectionMode();
+    }
+  };
+
   const handleBulkDelete = () => {
     showAlert(
       `${selectedProjects.size}개 항목 삭제`,
@@ -309,7 +317,7 @@ function AppContent() {
           isCollapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onOpenCreateProjectModal={openCreateProjectModal}
-          onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)}
+          onCloseMobileSidebar={handleCloseMobileSidebar}
           isSelectionMode={isSelectionMode}
           selectedProjects={selectedProjects}
           onToggleSelectionMode={toggleSelectionMode}

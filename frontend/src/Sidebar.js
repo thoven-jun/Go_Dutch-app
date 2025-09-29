@@ -49,14 +49,13 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
   };
 
   return (
-    <li className={`project-item ${isSelected ? 'selected' : ''}`}>
-      {isSelectionMode && (
-        <div className="selection-checkbox" onClick={(e) => { e.stopPropagation(); onProjectSelect(project.id); }}>
-          {isSelected && <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>}
-        </div>
-      )}
+    <li className={`project-item ${isSelected ? 'selected' : ''} ${isSelectionMode ? 'selection-mode-active' : ''}`}>    
+      <div className="selection-checkbox" onClick={(e) => { e.stopPropagation(); onProjectSelect(project.id); }}>
+        {isSelected && <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>}
+      </div>
+      
       <NavLink to={`/project/${project.id}`} onClick={handleItemClick}>
-        {project.name}
+        <span className="project-name-text">{project.name}</span>
       </NavLink>
 
       {!isSelectionMode && (

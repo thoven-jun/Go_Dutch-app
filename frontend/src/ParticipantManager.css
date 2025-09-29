@@ -1,3 +1,5 @@
+/* src/ParticipantManager.css */
+
 .manager-container {
   max-width: 800px;
   min-width: 600px;
@@ -19,11 +21,54 @@
   justify-content: space-between;
   align-items: center;
 }
-.manager-header h1 { margin: 0; }
-.close-button {
-  padding: 8px 16px; text-decoration: none; background-color: #e9ecef; color: #495057;
-  border-radius: 5px; font-weight: 500; transition: background-color 0.2s;
+
+/* ▼▼▼▼▼ [수정] 기존 h1 스타일을 새로운 타이틀 그룹 스타일로 대체 ▼▼▼▼▼ */
+.manager-header h1 {
+  margin: 0;
 }
+
+.header-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0; /* 자식 요소의 말줄임 처리를 위해 필수 */
+}
+
+.project-name-breadcrumb {
+  font-size: 1.2em;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px; /* 이름이 표시될 최대 너비 (필요시 조정) */
+}
+
+.project-name-breadcrumb::after {
+  content: '/';
+  margin-left: 10px;
+  color: #ced4da;
+  font-weight: 300;
+}
+
+.manager-header .page-title {
+  font-size: 1.6em;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap; /* '설정' 텍스트는 줄바꿈되지 않도록 */
+}
+
+.close-button {
+  padding: 8px 16px;
+  text-decoration: none;
+  background-color: #e9ecef;
+  color: #495057;
+  border-radius: 5px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
 .close-button:hover { background-color: #dee2e6; }
 .manager-content {
   padding-top: 30px; display: flex; flex-direction: column; gap: 50px;
@@ -65,12 +110,22 @@
 .reorder-button:hover { background-color: var(--bg-color); border-color: #adb5bd; }
 .add-form { display: flex; gap: 10px; align-items: center; }
 .add-form input { flex-grow: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1em; height: 44px; box-sizing: border-box; }
+
+/* ▼▼▼▼▼ [수정] 문법 오류 수정 ▼▼▼▼▼ */
 .add-form button {
-  padding: 10px 15px; border: none; background-color: var(--primary-color); color: white; border-radius: 4px;
-  cursor: pointer; font-size: 1em; transition: background-color 0.2s; flex-shrink: 0; height: 44px; box-sizing: border-box;
+  padding: 10px 15px;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+  height: 44px;
+  box-sizing: border-box;
 }
 
-/* --- ✨ [핵심 수정] 리스트(ul) 기본 스타일 초기화 --- */
 .participant-list,
 .category-list {
   list-style: none;
@@ -78,37 +133,39 @@
   margin: 0;
 }
 
-/* --- ✨ [핵심 수정] 참여자/카테고리 리스트 아이템 스타일 통일 --- */
 .participant-list li,
 .category-item {
   display: flex;
   align-items: center;
   position: relative;
   min-height: 60px;
-  padding: 12px 15px 12px 30px; /* 모든 여백을 통일 (상하 12, 우 15, 좌 55) */
+  padding: 12px 15px 12px 15px;
   background-color: #f8f9fa;
   border: 1px solid #f1f3f5;
   border-radius: 8px;
   margin-bottom: 8px;
-  transition: padding-left 0.2s ease-in-out; /* 부드러운 효과를 위한 transition */
+  transition: padding-left 0.2s ease-in-out;
+}
+.participant-list li.selection-item,
+.category-item.selection-item {
+  padding-left: 55px;
 }
 
 .manager-section .participant-name,
 .manager-section .category-info {
-  flex-grow: 1; /* 이름/정보 영역이 남은 공간을 모두 차지 */
+  flex-grow: 1;
   min-width: 0;
 }
-
 .manager-section .participant-actions,
 .manager-section .category-actions {
   display: flex;
   gap: 8px;
-  opacity: 1; /* 기본 상태: 보임 */
+  opacity: 1;
   transition: opacity 0.2s ease-in-out;
 }
 .manager-section .selection-item .participant-actions,
 .manager-section .selection-item .category-actions {
-  opacity: 0; /* 선택 모드: 숨김 */
+  opacity: 0;
   pointer-events: none;
 }
 .action-button {
@@ -123,22 +180,46 @@
   cursor: pointer;
   color: var(--text-secondary);
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .action-button:hover {
   background-color: var(--bg-secondary-color);
   color: var(--text-primary);
 }
 
-.edit-form { display: flex; flex-grow: 1; gap: 8px; align-items: center; }
-.edit-form input { flex-grow: 1; padding: 8px; border: 1px solid #4C6EF5; border-radius: 4px; font-size: 1em; }
-.edit-form button { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+.edit-form {
+  display: flex;
+  flex-grow: 1;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.edit-form .name-input {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  font-size: 1em;
+}
+
+.edit-form button:not(.action-button) {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  flex-shrink: 0;
+}
 .edit-form .save-edit-button { background-color: var(--primary-color); color: white; }
 .edit-form .cancel-edit-button { background-color: #e9ecef; }
+
 .category-info { display: flex; align-items: center; gap: 12px; }
 .category-emoji { font-size: 1.2em; }
 .add-category-form { display: flex; align-items: center; gap: 8px; width: 100%; }
-.add-category-form .name-input, .edit-form .name-input { flex-grow: 1; }
-.add-category-form input, .edit-form input { padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.95em; height: 44px; box-sizing: border-box; }
+.add-category-form .name-input { flex-grow: 1; }
+.add-category-form input { padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.95em; height: 44px; box-sizing: border-box; }
 .add-button {
   padding: 8px 16px; border: none; background-color: var(--primary-color); color: white; border-radius: 4px; cursor: pointer;
   font-size: 0.95em; font-weight: 500; transition: background-color 0.2s; flex-shrink: 0; height: 44px; box-sizing: border-box;
@@ -147,11 +228,13 @@
 .emoji-picker-button {
   width: 54px; height: 44px; border: 1px solid var(--border-color); border-radius: 4px; background-color: white; cursor: pointer;
   display: flex; align-items: center; justify-content: space-between; padding: 0 8px; transition: border-color 0.2s;
+  flex-shrink: 0;
 }
 .emoji-picker-button .selected-emoji { font-size: 1.5em; }
 .emoji-picker-button svg { color: var(--text-secondary); }
 .emoji-picker-dropdown {
-  position: absolute; bottom: 100%; left: 0; margin-bottom: 8px; background-color: white; border: 1px solid var(--border-color);
+  position: absolute; top: 100%; margin-top: 8px; left: 0;
+  background-color: white; border: 1px solid var(--border-color);
   border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); padding: 8px; display: grid;
   grid-template-columns: repeat(6, 1fr); gap: 4px; z-index: 10;
 }
@@ -165,10 +248,6 @@
   opacity: 0; pointer-events: none; transition: opacity 0.2s ease-in-out;
 }
 .manager-section .selection-item .selection-checkbox { opacity: 1; pointer-events: auto; }
-.participant-list li.selection-item,
-.category-item.selection-item {
-  padding-left: 55px;
-}
 .manager-section .selection-checkbox.selected { background-color: var(--primary-color); border-color: var(--primary-color); }
 .selection-action-bar {
   display: flex; justify-content: space-between; align-items: center;
@@ -218,5 +297,14 @@
   }
   .settings-nav button.active {
     background-color: transparent; color: var(--primary-color); border-bottom: 2px solid var(--primary-color);
+  }
+  .edit-form .category-actions {
+    margin-left: auto;
+  }
+  .project-name-breadcrumb {
+    max-width: 150px; /* 이름 최대 너비를 150px로 제한 */
+  }
+  .edit-form .category-actions {
+    margin-left: auto;
   }
 }

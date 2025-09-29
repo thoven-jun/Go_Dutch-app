@@ -55,7 +55,9 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
     <div className="detail-container">
       <header className="detail-header">
         <div className="detail-title-group">
-          <h2 className="detail-title">{project.name}</h2>
+          <h2 className="detail-title" title={project.name}>
+            {project.name}
+          </h2>
           <button 
             className="title-edit-button" 
             onClick={() => onOpenRenameModal(project.id, project.name)}

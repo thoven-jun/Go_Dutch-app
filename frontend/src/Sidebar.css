@@ -80,25 +80,39 @@
   -webkit-tap-highlight-color: transparent;
   display: flex;
   align-items: center;
-  position: relative;
+  position: relative; /* ✨ 체크박스 위치의 기준점으로 설정 */
+  overflow: hidden;   /* ✨ 애니메이션이 부드럽게 보이도록 설정 */
   border-radius: 50px;
   margin: 2px 0;
 }
 
 .project-item a {
   flex-grow: 1;
-  padding: 12px 48px 12px 20px;
+  min-width: 0; /* flex item 내부에서 자식 요소가 올바르게 축소되도록 설정 */
+  padding: 12px 48px 12px 20px; 
+  transition: padding-left 0.25s ease-in-out;
   display: flex;
   align-items: center;
-  width: 100%;
+  /* width: 100%; /* 이 속성은 삭제합니다. */
   height: 100%;
   color: #1f2937;
   text-decoration: none;
   border-radius: 50px;
+  /* ▼▼▼▼▼ [수정] 아래 3줄을 삭제하고, 아래 새 클래스로 이동 ▼▼▼▼▼ */
+  /* white-space: nowrap; */
+  /* overflow: hidden; */
+  /* text-overflow: ellipsis; */
+}
+
+/* ▼▼▼▼▼ [추가] 프로젝트 이름 텍스트를 위한 새 스타일 ▼▼▼▼▼ */
+.project-name-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: padding-left 0.2s ease-in-out;
+}
+
+.project-item.selection-mode-active a {
+  padding-left: 52px;
 }
 
 .project-item:hover {
@@ -263,16 +277,26 @@
 }
 
 .sidebar .selection-checkbox {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-in-out;
   width: 20px;
   height: 20px;
   border: 2px solid #adb5bd;
   border-radius: 50%;
-  margin-left: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+}
+.project-item.selection-mode-active .selection-checkbox {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .project-item.selected .selection-checkbox {
@@ -283,9 +307,6 @@
 .selection-checkbox svg {
   width: 16px;
   height: 16px;
-}
-.project-item .selection-checkbox + a {
-  padding-left: 10px;
 }
 
 /* --- 액션 바 스타일 --- */

@@ -60,6 +60,9 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
   }, [project, projects]);
   
   useEffect(() => {
+    // 탭이 변경되면, 모든 수정/선택 모드를 취소합니다.
+    handleCancelEditingParticipant();
+    handleCancelEditingCategory();
     setParticipantSelectionMode(false);
     setSelectedParticipants(new Set());
     setCategorySelectionMode(false);
@@ -92,7 +95,13 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
 
   return (
     <div className="manager-container">
-      <header className="manager-header"> <h1>{project.name} 설정</h1> <Link to={`/project/${projectId}`} className="close-button">돌아가기</Link> </header>
+      <header className="manager-header">
+        <div className="header-title-group">
+          <span className="project-name-breadcrumb" title={project.name}>{project.name}</span>
+          <h1 className="page-title">설정</h1>
+        </div>
+        <Link to={`/project/${projectId}`} className="close-button">돌아가기</Link>
+      </header>
       <div className="manager-content settings-layout">
         <nav className="settings-nav">
           <ul> <li><button className={activeTab === 'participants' ? 'active' : ''} onClick={() => setActiveTab('participants')}>참여자 관리</button></li> <li><button className={activeTab === 'categories' ? 'active' : ''} onClick={() => setActiveTab('categories')}>카테고리 관리</button></li> </ul>
@@ -103,7 +112,12 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
               <div className="section-sticky-header">
                 <div className="section-header">
                   <h3>참여자 목록 ({participants.length}명)</h3>
-                  <div className="button-group"> {!isParticipantSelectionMode && <button onClick={() => onOpenOrderModal(project)} className="reorder-button">순서 편집</button>} <button onClick={() => { setParticipantSelectionMode(!isParticipantSelectionMode); setSelectedParticipants(new Set()); }} className="reorder-button">{isParticipantSelectionMode ? '완료' : '선택'}</button> </div>
+                  <div className="button-group">
+                    {/* ▼▼▼▼▼ '순서 편집' 버튼에 handleCancelEditingParticipant() 추가 ▼▼▼▼▼ */}
+                    {!isParticipantSelectionMode && <button onClick={() => { handleCancelEditingParticipant(); onOpenOrderModal(project); }} className="reorder-button">순서 편집</button>}
+                    {/* ▼▼▼▼▼ '선택' 버튼에 handleCancelEditingParticipant() 추가 ▼▼▼▼▼ */}
+                    <button onClick={() => { handleCancelEditingParticipant(); setParticipantSelectionMode(!isParticipantSelectionMode); setSelectedParticipants(new Set()); }} className="reorder-button">{isParticipantSelectionMode ? '완료' : '선택'}</button>
+                  </div>
                 </div>
                 <p className="section-description">프로젝트에 참여하는 사람들의 목록입니다.</p>
               </div>
@@ -112,7 +126,18 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
                   <li key={p.id} className={isParticipantSelectionMode ? 'selection-item' : ''} onClick={isParticipantSelectionMode ? () => handleParticipantSelect(p.id) : undefined}>
                     <div className={`selection-checkbox ${selectedParticipants.has(p.id) ? 'selected' : ''}`}> {selectedParticipants.has(p.id) && <CheckIcon />} </div>
                     {editingParticipant.id === p.id ? (
-                      <div className="edit-form"> <input type="text" value={editingParticipant.name} onChange={(e) => setEditingParticipant({ ...editingParticipant, name: e.target.value })} autoFocus /> <button onClick={handleSaveEditingParticipant} className="save-edit-button">저장</button> <button onClick={handleCancelEditingParticipant} className="cancel-edit-button">취소</button> </div>
+                      <div className="edit-form">
+                        {/* ▼▼▼▼▼ [수정] className="name-input" 추가 ▼▼▼▼▼ */}
+                        <input
+                          type="text"
+                          className="name-input"
+                          value={editingParticipant.name}
+                          onChange={(e) => setEditingParticipant({ ...editingParticipant, name: e.target.value })}
+                          autoFocus
+                        />
+                        <button onClick={handleSaveEditingParticipant} className="save-edit-button">저장</button>
+                        <button onClick={handleCancelEditingParticipant} className="cancel-edit-button">취소</button>
+                      </div>
                     ) : (
                       <>
                         <span className="participant-name">{p.name}</span>
@@ -136,7 +161,10 @@ function ProjectSettings({ projects, onUpdate, showAlert, onOpenDuplicateModal, 
           {activeTab === 'categories' && (
             <div className="manager-section">
               <div className="section-sticky-header">
-                <div className="section-header"> <h3>카테고리 관리</h3> <button onClick={() => { setCategorySelectionMode(!isCategorySelectionMode); setSelectedCategories(new Set()); }} className="reorder-button">{isCategorySelectionMode ? '완료' : '선택'}</button> </div>
+                <div className="section-header"> 
+                    <h3>카테고리 관리</h3> 
+                    <button onClick={() => { handleCancelEditingCategory(); setCategorySelectionMode(!isCategorySelectionMode); setSelectedCategories(new Set()); }} className="reorder-button">{isCategorySelectionMode ? '완료' : '선택'}</button>
+                </div>
                 <p className="section-description">이 프로젝트에서 사용할 지출 카테고리를 설정합니다.</p>
               </div>
               <ul className="category-list scrollable-list">

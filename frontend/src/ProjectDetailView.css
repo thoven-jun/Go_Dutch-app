@@ -18,6 +18,12 @@
   margin: 0;
   color: var(--text-primary);
   font-size: 1.5em;
+  /* ▼▼▼▼▼ [수정] 말줄임 스타일 3줄 추가 ▼▼▼▼▼ */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+  /* ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲ */
 }
 .detail-header, .section-header {
   display: flex;
@@ -628,6 +634,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0; /* ✨ [추가] 자식 요소의 말줄임 처리를 위해 필수 */
 }
 
 /* ✨ [추가] 제목 옆 수정 아이콘 버튼 스타일 */
@@ -672,5 +679,8 @@
   .expense-item-details {
     /* ✨ [수정] 모바일 최대 너비를 90px -> 120px로 늘렸습니다. */
     max-width: 120px;
+  }
+  .detail-title {
+    max-width: 140px; /* 이름 최대 너비를 180px로 제한 */
   }
 }
