@@ -10,8 +10,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 80px);
-  max-height: 850px;
 }
 .manager-header {
   padding: 20px 40px;
@@ -22,7 +20,6 @@
   align-items: center;
 }
 
-/* ▼▼▼▼▼ [수정] 기존 h1 스타일을 새로운 타이틀 그룹 스타일로 대체 ▼▼▼▼▼ */
 .manager-header h1 {
   margin: 0;
 }
@@ -31,7 +28,7 @@
   display: flex;
   align-items: baseline;
   gap: 10px;
-  min-width: 0; /* 자식 요소의 말줄임 처리를 위해 필수 */
+  min-width: 0;
 }
 
 .project-name-breadcrumb {
@@ -41,7 +38,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px; /* 이름이 표시될 최대 너비 (필요시 조정) */
+  max-width: 300px;
 }
 
 .project-name-breadcrumb::after {
@@ -56,7 +53,7 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  white-space: nowrap; /* '설정' 텍스트는 줄바꿈되지 않도록 */
+  white-space: nowrap;
 }
 
 .close-button {
@@ -87,8 +84,8 @@
 }
 .settings-nav button:hover { background-color: var(--bg-secondary-color); }
 .settings-nav button.active { background-color: var(--accent-color-light); color: var(--primary-color); font-weight: 600; }
-.settings-panel { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; }
-.manager-section { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; }
+.settings-panel { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; }
+.manager-section { display: flex; flex-direction: column; }
 .settings-panel > .manager-section { margin-top: 0; gap: 0; }
 .section-sticky-header { flex-shrink: 0; padding-bottom: 8px; }
 .section-sticky-footer {
@@ -111,7 +108,6 @@
 .add-form { display: flex; gap: 10px; align-items: center; }
 .add-form input { flex-grow: 1; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1em; height: 44px; box-sizing: border-box; }
 
-/* ▼▼▼▼▼ [수정] 문법 오류 수정 ▼▼▼▼▼ */
 .add-form button {
   padding: 10px 15px;
   border: none;
@@ -249,9 +245,6 @@
 }
 .emoji-option:hover { background-color: var(--bg-secondary-color); }
 
-
-
-/* --- 선택 모드 스타일 --- */
 .manager-section .selection-checkbox {
   position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
   width: 20px; height: 20px; border-radius: 50%; border: 2px solid #adb5bd;
@@ -278,7 +271,6 @@
 .selection-action-bar .delete-button:disabled { background-color: #f1f3f5; color: #adb5bd; cursor: not-allowed; }
 .section-sticky-footer:has(.selection-action-bar) { padding-top: 0; border-top: none; }
 
-/* --- 모바일 반응형 스타일 --- */
 @media (max-width: 768px) {
   .manager-container {
     margin: 0; box-shadow: none; border-radius: 0; min-width: 0; max-width: 100%; height: auto; max-height: none;
@@ -289,7 +281,9 @@
   }
   .settings-panel { height: auto; display: block; width: 100%; }
   .manager-section { height: auto; }
-  .scrollable-list { overflow-y: visible; padding-bottom: 0; }
+  .scrollable-list {
+    padding-bottom: 0;
+  }
   .section-sticky-footer {
     position: static; padding: 16px 0 0 0; border-top: 1px solid var(--border-color);
     box-shadow: none; background-color: white;
@@ -313,9 +307,178 @@
     margin-left: auto;
   }
   .project-name-breadcrumb {
-    max-width: 150px; /* 이름 최대 너비를 150px로 제한 */
+    max-width: 150px;
   }
   .edit-form .category-actions {
     margin-left: auto;
   }
 }
+
+/* --- [추가] 일반 설정 탭 UI 스타일 --- */
+.general-settings-panel .manager-section {
+  margin-bottom: 30px;
+}
+.general-settings-panel .date-range-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.general-settings-panel .date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.general-settings-panel .date-input-group label {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+.general-settings-panel .date-input-group input {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  height: 44px;
+  box-sizing: border-box;
+}
+
+.round-management-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 240px; 
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+.round-management-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+.round-management-list li:last-child {
+  border-bottom: none;
+}
+.round-management-list .round-name {
+  font-weight: 500;
+}
+
+/* --- [추가] 일반 설정 탭 반응형 UI 개선 --- */
+.general-settings-panel .add-form {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .general-settings-panel .add-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .general-settings-panel .add-round-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
+}
+
+/* --- [수정] 참여자 참석 관리 UI 스타일 --- */
+.attendance-manager {
+  margin-top: 24px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 24px;
+}
+.attendance-manager h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+.attendance-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  border-spacing: 0;
+}
+.attendance-table th, .attendance-table td {
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  text-align: center;
+  min-width: 60px;
+}
+.attendance-table th {
+  background-color: var(--bg-color);
+  font-weight: 500;
+}
+
+.attendance-table th:first-child,
+.attendance-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  font-weight: 500;
+  background-color: var(--bg-color);
+  padding-left: 12px;
+  min-width: 120px;
+}
+.attendance-table th:first-child {
+  z-index: 2;
+}
+
+.attendance-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color);
+}
+.attendance-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.add-round-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.add-round-form input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  width: 80px;
+}
+.add-round-form button {
+  padding: 6px 12px;
+  font-size: 0.9em;
+}
+.save-attendance-button {
+  padding: 8px 16px;
+  transition: all 0.2s;
+}
+
+/* ✨ [핵심 수정] '저장됨' 버튼 UI 개선 */
+.save-attendance-button:disabled {
+  background-color: #e9ecef; /* 비활성화된 느낌의 회색 배경 */
+  color: #868e96; /* 비활성화된 느낌의 회색 텍스트 */
+  cursor: default;
+  opacity: 1;
+  border: 1px solid transparent; /* 테두리 제거 */
+}
+
+/* ✨ [개선] 참여자 목록의 최대 높이를 지정하고, 넘칠 때만 스크롤되도록 수정 */
+.participant-list {
+  max-height: 275px; /* 약 5명 정도의 높이 */
+  overflow-y: auto;
+  padding-right: 5px; /* 스크롤바 공간 확보 */
+}
+.participant-list::-webkit-scrollbar { width: 8px; }
+.participant-list::-webkit-scrollbar-track { background: transparent; }
+.participant-list::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 4px; }
+.participant-list::-webkit-scrollbar-thumb:hover { background: #adb5bd; }

@@ -662,21 +662,144 @@
   background-color: #f1f3f5; /* 호버 시 배경색 */
 }
 
+/* --- [추가] 지출 내역 그룹화 UI 스타일 --- */
+.expense-group {
+  margin-bottom: 20px;
+}
+.expense-group:last-child {
+  margin-bottom: 0;
+}
+
+.expense-group-header {
+  padding: 8px 12px;
+  background-color: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+}
+.expense-group-header .group-total {
+  color: var(--text-primary);
+}
+
+.expense-group .item-list {
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 8px;
+}
+
+.expense-group .expense-item {
+  border: none;
+  margin-bottom: 0;
+  padding: 12px 8px;
+}
+.expense-group .expense-item:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.project-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  margin-left: 12px;
+  font-size: 0.75em;
+  font-weight: 600;
+  border-radius: 4px;
+  background-color: var(--bg-secondary-color);
+  color: var(--text-secondary);
+  vertical-align: middle; /* 제목과 세로 정렬을 맞춤 */
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.more-menu-container {
+  position: relative;
+}
+.header-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 10;
+  width: 150px;
+  padding: 8px;
+}
+.header-dropdown-menu button,
+.header-dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 0.9em;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.header-dropdown-menu button:hover,
+.header-dropdown-menu a:hover {
+  background-color: var(--bg-color);
+}
+.more-menu-button {
+  background: none;
+  border: none;
+  padding: 3px;
+  cursor: pointer;
+  color: #adb5bd;
+  line-height: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.more-menu-button:hover {
+  color: #212529;
+  background-color: #f1f3f5;
+}
+
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
   .detail-container {
-    min-width: 0; /* 최소 너비 제한 해제 */
+    min-width: 41.6vh; /* 최소 너비 제한 해제 */
     width: 100%;  /* 화면 너비에 맞춤 */
     margin: 0;    /* 중앙 정렬 해제 */
     height: calc(100vh - 110px);
   }
   .detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 17px 25px; /* 패딩 조정 */
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0; /* 헤더는 줄어들지 않음 */
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 8px;
+  }
+  .detail-title-group {
+    flex-basis: auto;
+    order: 0;
+    min-width: 0;
+  }
+  .header-actions {
+    flex-basis: auto;
+    order: 0;
+    margin-left: auto;
+  }
+  .detail-title {
+    max-width: 100%;
   }
   .content-body {
     padding: 20px;
@@ -692,7 +815,10 @@
     /* ✨ [수정] 모바일 최대 너비를 90px -> 120px로 늘렸습니다. */
     max-width: 120px;
   }
-  .detail-title {
-    max-width: 140px; /* 이름 최대 너비를 180px로 제한 */
+  .header-actions .title-edit-button {
+    display: none;
+  }
+  .header-actions .more-menu-button {
+    display: flex; /* '더보기' 버튼은 항상 보이도록 설정 */
   }
 }

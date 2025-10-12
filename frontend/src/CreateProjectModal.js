@@ -9,12 +9,16 @@ const createParticipant = (name = '') => ({
 
 function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
   const [projectName, setProjectName] = useState('');
+  // ✨ [추가] 프로젝트 유형 및 날짜 상태
+  const [projectType, setProjectType] = useState('general');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
   const [participants, setParticipants] = useState([]);
   const [validationError, setValidationError] = useState('');
   const [duplicateIndices, setDuplicateIndices] = useState([]);
   const [isFullViewOpen, setIsFullViewOpen] = useState(false);
   
-  // ✨ [수정] 데스크탑 드래그앤드롭 전용 Ref
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
   const listContainer = useRef(null);
@@ -23,15 +27,18 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
   useEffect(() => {
     if (isOpen) {
       nextId = 0;
-      setParticipants([createParticipant(), createParticipant()]);
+      // ✨ 모달이 열릴 때 상태 초기화
       setProjectName('');
+      setParticipants([createParticipant(), createParticipant()]);
+      setProjectType('general');
+      setStartDate('');
+      setEndDate('');
       setValidationError('');
       setDuplicateIndices([]);
       setIsFullViewOpen(false);
     }
   }, [isOpen]);
 
-  // ✨ [수정] ID를 기준으로 참여자 이름을 변경합니다.
   const handleParticipantChange = (id, value) => {
     setParticipants(prevParticipants => 
       prevParticipants.map(p => (p.id === id ? { ...p, name: value } : p))
@@ -42,12 +49,10 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
     }
   };
   
-  // ✨ [수정] 새 참여자 객체를 추가합니다.
   const addParticipantInput = () => {
     setParticipants([...participants, createParticipant()]);
   };
 
-  // ✨ [수정] ID를 기준으로 참여자를 삭제합니다.
   const removeParticipantInput = (id) => {
     if (participants.length <= 2) {
       alert('참여자는 최소 2명 이상이어야 합니다.');
@@ -61,19 +66,28 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
     setValidationError('');
     setDuplicateIndices([]);
 
-    if (participants.some(p => p.name.trim() === '')) {
-      setValidationError('참여자 이름을 모두 입력해주세요.');
-      return;
-    }
-
     const finalProjectName = projectName.trim();
-    // ✨ [수정] 객체의 name 속성을 사용하도록 수정
-    const participantData = participants.map((p, index) => ({ name: p.name.trim(), originalIndex: index }));
-
     if (!finalProjectName) {
       setValidationError('프로젝트 이름을 입력해주세요.');
       return;
     }
+    
+    // ✨ [추가] 여행 유형일 경우 날짜 유효성 검사
+    if (projectType === 'travel' && (!startDate || !endDate)) {
+      setValidationError('여행 기간을 모두 입력해주세요.');
+      return;
+    }
+    if (projectType === 'travel' && new Date(startDate) > new Date(endDate)) {
+        setValidationError('시작일은 종료일보다 이전이어야 합니다.');
+        return;
+    }
+    
+    if (participants.some(p => p.name.trim() === '')) {
+      setValidationError('참여자 이름을 모두 입력해주세요.');
+      return;
+    }
+    
+    const participantData = participants.map((p, index) => ({ name: p.name.trim(), originalIndex: index }));
     if (participantData.length < 2) {
       setValidationError('참여자를 두 명 이상 추가해주세요.');
       return;
@@ -94,10 +108,16 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
       return;
     }
     
-    onCreateProject(finalProjectName, participantData.map(p => p.name));
+    // ✨ [수정] onCreateProject 호출 시 유형과 날짜 정보 전달
+    onCreateProject({
+      name: finalProjectName,
+      type: projectType,
+      startDate: projectType === 'travel' ? startDate : null,
+      endDate: projectType === 'travel' ? endDate : null,
+      participants: participantData.map(p => p.name)
+    });
   };
 
-  // --- ✨ [수정] 데스크탑 전용 드래그앤드롭 핸들러 ---
   const handleDragSort = () => {
     if (dragItem.current === null || dragOverItem.current === null) return;
     let _participants = [...participants];
@@ -126,6 +146,35 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
                   autoFocus
                 />
               </div>
+
+              {/* ✨ [추가] 프로젝트 유형 선택 UI */}
+              <div className="form-group">
+                <label>정산 유형</label>
+                <div className="project-type-selector">
+                  <button type="button" className={`project-type-button ${projectType === 'general' ? 'active' : ''}`} onClick={() => setProjectType('general')}>일반</button>
+                  <button type="button" className={`project-type-button ${projectType === 'travel' ? 'active' : ''}`} onClick={() => setProjectType('travel')}>여행</button>
+                  <button type="button" className={`project-type-button ${projectType === 'gathering' ? 'active' : ''}`} onClick={() => setProjectType('gathering')}>회식/모임</button>
+                </div>
+              </div>
+
+              {/* ✨ [추가] 여행 유형 선택 시 날짜 입력 UI */}
+              {projectType === 'travel' && (
+                <div className="form-group">
+                  <label>여행 기간</label>
+                  <div className="date-range-picker">
+                    <div className="date-input-group">
+                      <label htmlFor="start-date">시작일</label>
+                      <input id="start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                    </div>
+                    <span className="tilde">~</span>
+                    <div className="date-input-group">
+                      <label htmlFor="end-date">종료일</label>
+                      <input id="end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="form-group participant-form-group">
                 <div className="form-label-header">
                   <label>참여자</label>
@@ -137,7 +186,6 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
                   {participants.map((participant, index) => (
                     <div 
                       key={participant.id}
-                      // ✨ [핵심 수정] 모바일에서는 드래그 관련 클래스와 속성, 이벤트를 적용하지 않음
                       className={`participant-input-row ${!isMobile ? 'draggable-item' : ''}`}
                       draggable={!isMobile}
                       onDragStart={!isMobile ? () => (dragItem.current = index) : undefined}
@@ -145,7 +193,6 @@ function CreateProjectModal({ isOpen, onClose, onCreateProject }) {
                       onDragEnd={!isMobile ? handleDragSort : undefined}
                       onDragOver={!isMobile ? (e) => e.preventDefault() : undefined}
                     >
-                      {/* ✨ [핵심 수정] 데스크탑에서만 드래그 핸들 아이콘 표시 */}
                       {!isMobile && <span>☰</span>}
                       <input
                         type="text"

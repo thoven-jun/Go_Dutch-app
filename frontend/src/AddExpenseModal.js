@@ -2,19 +2,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 import FullSplitViewModal from './FullSplitViewModal';
 import AccordionSection from './AccordionSection';
 
-// --- 아이콘 SVG 및 헬퍼 함수 ---
 const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24 24" fill={isLocked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{isLocked ? <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4" /> : <path d="M5 11H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2m-4-4a5 5 0 0 0-10 0v4h10V7z" />}</svg> );
 const formatNumber = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
 const unformatNumber = (str) => { if (typeof str !== 'string' || str.trim() === '') return 0; return Number(str.replace(/,/g, '')); };
 
 function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
+  // ✨ [오류 수정] project 데이터가 없으면 렌더링하지 않음
+  if (!project) return null;
+
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState('');
   const [splitMethod, setSplitMethod] = useState('equally');
-  
   const [selectedCategory, setSelectedCategory] = useState('');
-  
+  const [eventDate, setEventDate] = useState('');
+  const [round, setRound] = useState(1);
+
   const [validationError, setValidationError] = useState('');
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
   const [splitParticipantIds, setSplitParticipantIds] = useState(new Set());
@@ -26,12 +29,12 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
-  const categories = project?.categories || []; // ✨
+  const categories = project?.categories || [];
 
   const handleToggleSection = (sectionName) => {
     setOpenSection(prevSection => (prevSection === sectionName ? null : sectionName));
   };
-
+  
   const setDefaultSplits = useCallback((method) => {
     const totalAmount = unformatNumber(amount);
     if ((method === 'amount' && !totalAmount) || participants.length === 0) {
@@ -102,11 +105,12 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
   useEffect(() => {
     if (isOpen) {
-      // ✨ [수정] 카테고리 API 호출 로직 삭제, project.categories에서 기본값 설정
       if (categories.length > 0) {
         setSelectedCategory(categories[0].id);
       }
       setDesc(''); setAmount('0'); setPayerId(''); setSplitMethod('equally');
+      setEventDate(project?.startDate || '');
+      setRound(1);
       setSplitDetails({}); setSplitDetailStrings({}); setValidationError('');
       setLockedParticipants(new Set());
       setPennyRoundingTargetId('');
@@ -115,7 +119,34 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         setSplitParticipantIds(new Set(project.participants.map(p => p.id)));
       }
     }
-  }, [isOpen, project, categories]); // ✨ 의존성 배열에 categories 추가
+  }, [isOpen, project, categories]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (project.type === 'travel') {
+      if (!eventDate) {
+        setSplitParticipantIds(new Set());
+        return;
+      }
+      const attendingParticipantIds = participants
+        .filter(p => p.attendance?.includes(eventDate))
+        .map(p => p.id);
+      setSplitParticipantIds(new Set(attendingParticipantIds));
+    } else if (project.type === 'gathering') {
+      const roundNum = Number(round);
+      if (!roundNum || roundNum < 1) {
+        setSplitParticipantIds(new Set());
+        return;
+      }
+      const attendingParticipantIds = participants
+        .filter(p => p.attendance?.includes(roundNum))
+        .map(p => p.id);
+      setSplitParticipantIds(new Set(attendingParticipantIds));
+    } else {
+        setSplitParticipantIds(new Set(participants.map(p => p.id)));
+    }
+  }, [isOpen, eventDate, round, project.type, participants]);
 
   const handleSplitMethodChange = (method) => {
     setSplitMethod(method);
@@ -142,11 +173,10 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         newDetails = rebalancedDetails;
         Object.assign(newStrings, rebalancedStrings);
     } else if (splitMethod === 'percentage') {
-        // ✨ [핵심 수정] 100을 초과하는 값을 입력하면 100으로 자동 수정하는 로직
         let numValue = parseFloat(cleanedValue) || 0;
         if (numValue > 100) {
             numValue = 100;
-            newStrings[participantId] = '100'; // 화면에 보이는 값도 100으로 수정
+            newStrings[participantId] = '100';
         }
         newDetails[participantId] = numValue;
         
@@ -167,14 +197,32 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   const handleAddExpense = () => {
     setValidationError('');
     const totalAmount = unformatNumber(amount);
-    if (!desc.trim() || !totalAmount || !payerId || !project?.id) { setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.'); return; }
+    if (!desc.trim() || !totalAmount || !payerId) { setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.'); return; }
+    if (project.type === 'travel' && !eventDate) { setValidationError('지출이 발생한 날짜를 선택해주세요.'); return; }
+    if (project.type === 'gathering' && (!round || round < 1)) { setValidationError('회차를 1 이상의 숫자로 입력해주세요.'); return; }
+
     if (splitMethod === 'equally' && splitParticipantIds.size === 0) { setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.'); return; }
     if (splitMethod === 'amount') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(splitSum - totalAmount) > 0.01) { setValidationError(`금액의 합계(${formatNumber(Math.round(splitSum))}원)가 총 지출액(${formatNumber(totalAmount)}원)과 일치하지 않습니다.`); return; }
     } else if (splitMethod === 'percentage') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(100 - splitSum) > 0.1) { setValidationError(`비율의 합계(${splitSum.toFixed(1)}%)가 100%가 되어야 합니다.`); return; } }
+    
+    const expenseData = {
+      desc,
+      amount: totalAmount,
+      payer_id: Number(payerId),
+      split_method: splitMethod,
+      split_details: splitDetails,
+      category_id: Number(selectedCategory),
+      locked_participant_ids: Array.from(lockedParticipants),
+      split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [],
+      penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null,
+      eventDate: project.type === 'travel' ? eventDate : null,
+      round: project.type === 'gathering' ? Number(round) : null,
+    };
+
     fetch(`${apiBaseUrl}/projects/${project.id}/expenses`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ desc, amount: totalAmount, payer_id: Number(payerId), split_method: splitMethod, split_details: splitDetails, category_id: Number(selectedCategory), locked_participant_ids: Array.from(lockedParticipants), split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [], penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null })
+      body: JSON.stringify(expenseData)
     }).then(res => { if (!res.ok) throw new Error("Server response was not ok"); onUpdate(); onClose(); }).catch(error => console.error("Failed to add expense:", error));
   };
   
@@ -184,7 +232,6 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   
   const renderSplitError = () => {
     const renderError = (total, sum, diff, unit) => (
-      // ✨ [수정] 총액/합계와 오차를 별도의 div로 그룹화
       <div className="split-error-details">
         <div className="split-error-details-main">
           <span>총액: {formatNumber(total)}{unit}</span>
@@ -224,8 +271,28 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
       <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
       <div className="form-item-half form-group"><label htmlFor="category-select-add">카테고리</label><select id="category-select-add" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
       <div className="form-item-half floating-label-group"><input id="expense-amount-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => {const numValue = unformatNumber(e.target.value); setAmount(numValue === 0 ? '' : String(numValue)); }} placeholder=" " inputMode="numeric"/><label htmlFor="expense-amount-modal">금액</label><span className="unit">원</span></div>
-      <div className="form-item-full form-group"><label htmlFor="payer-select-add">결제자</label><select id="payer-select-add" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+      <div className="form-item-half form-group"><label htmlFor="payer-select-add">결제자</label><select id="payer-select-add" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+
+      {project.type === 'travel' && (
+        <div className="form-item-half form-group">
+          <label htmlFor="event-date-add">지출일</label>
+          <input id="event-date-add" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} min={project.startDate} max={project.endDate} />
+        </div>
+      )}
+      {project.type === 'gathering' && (
+        <div className="form-item-half form-group">
+          <label htmlFor="round-add">회차</label>
+          <select id="round-add" value={round} onChange={e => setRound(Number(e.target.value))}>
+            {/* ✨ 프로젝트에 저장된 회차와, 지출 내역에만 있는 회차를 모두 합쳐서 보여줌 */}
+            {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
+              <option key={r} value={r}>{r}차</option>
+            ))}
+          </select>
+        </div>
+      )}
+      
       <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
+      
       {splitMethod === 'equally' && (
           <>
             <div className="form-item-full split-participants-section">
@@ -260,23 +327,29 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
         <div className="form-item-half form-group"><label htmlFor="category-select-add">카테고리</label><select id="category-select-add" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
         <div className="form-item-half floating-label-group">
-          <input 
-            id="expense-amount-modal" 
-            type="text" 
-            value={amount} 
-            onChange={e => setAmount(e.target.value)} 
-            onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} 
-            onFocus={e => {
-              const numValue = unformatNumber(e.target.value);
-              setAmount(numValue === 0 ? '' : String(numValue));
-            }}
-            placeholder=" " 
-            inputMode="numeric" 
-          />
+          <input id="expense-amount-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => { const numValue = unformatNumber(e.target.value); setAmount(numValue === 0 ? '' : String(numValue)); }} placeholder=" " inputMode="numeric" />
           <label htmlFor="expense-amount-modal">금액</label>
           <span className="unit">원</span>
         </div>
         <div className="form-item-full form-group"><label htmlFor="payer-select-add">결제자</label><select id="payer-select-add" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+        
+        {project.type === 'travel' && (
+          <div className="form-item-full form-group">
+            <label htmlFor="event-date-add-mobile">지출일</label>
+            <input id="event-date-add-mobile" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} min={project.startDate} max={project.endDate} />
+          </div>
+        )}
+        {project.type === 'gathering' && (
+          <div className="form-item-half form-group">
+            <label htmlFor="round-add-mobile">회차</label>
+            <select id="round-add-mobile" value={round} onChange={e => setRound(Number(e.target.value))}>
+              {/* ✨ 프로젝트에 저장된 회차와, 지출 내역에만 있는 회차를 모두 합쳐서 보여줌 */}
+              {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
+                <option key={r} value={r}>{r}차</option>
+              ))}
+            </select>
+          </div>
+        )}
       </AccordionSection>
 
       <AccordionSection title="분배 방식" subtitle={splitMethodText} isOpen={openSection === 'split'} onToggle={() => handleToggleSection('split')}>
@@ -303,7 +376,6 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         subtitle={roundingTargetName ? `10원 미만 몰아주기: ${roundingTargetName}` : '선택 안함'}
         isOpen={openSection === 'options'}
         onToggle={() => handleToggleSection('options')}
-        // ✨ [핵심 수정] 아래 disabled 속성을 추가합니다.
         disabled={isMobile && (splitMethod === 'amount' || splitMethod === 'percentage')}
       >
         <div className="form-item-full">

@@ -2,19 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import FullSplitViewModal from './FullSplitViewModal';
 import AccordionSection from './AccordionSection';
 
-// --- 아이콘 SVG 및 헬퍼 함수 ---
 const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24 24" fill={isLocked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{isLocked ? <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4" /> : <path d="M5 11H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2m-4-4a5 5 0 0 0-10 0v4h10V7z" />}</svg> );
 const formatNumber = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
 const unformatNumber = (str) => { if (typeof str !== 'string' || str.trim() === '') return 0; return Number(str.replace(/,/g, '')); };
 
 function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUrl }) {
+  // ✨ [오류 수정] project 또는 expense 데이터가 없으면 렌더링하지 않음
+  if (!project || !expense) return null;
+
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [payerId, setPayerId] = useState('');
   const [splitMethod, setSplitMethod] = useState('equally');
-  
-  // ✨ [수정] 카테고리 state를 project prop에서 직접 사용하도록 변경
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [round, setRound] = useState(1);
   
   const [validationError, setValidationError] = useState('');
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
@@ -27,12 +29,12 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
 
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
-  const categories = project?.categories || []; // ✨
+  const categories = project?.categories || [];
 
   const handleToggleSection = (sectionName) => {
     setOpenSection(prevSection => (prevSection === sectionName ? null : sectionName));
   };
-
+  
   const setDefaultSplits = useCallback((method) => {
     const totalAmount = unformatNumber(amount);
     if ((method === 'amount' && !totalAmount) || participants.length === 0) { setSplitDetails({}); setSplitDetailStrings({}); return; }
@@ -79,13 +81,14 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
 
   useEffect(() => {
     if (isOpen && expense) {
-      // ✨ [수정] 카테고리 API 호출 로직 삭제
       setDesc(expense.desc);
       setAmount(formatNumber(expense.amount));
       setPayerId(expense.payer_id || '');
       const method = expense.split_method || 'equally';
       setSplitMethod(method);
       setSelectedCategory(expense.category_id || '');
+      setEventDate(expense.eventDate || project?.startDate || '');
+      setRound(expense.round || 1);
       setValidationError('');
       const initialDetails = expense.split_details || {};
       setSplitDetails(initialDetails);
@@ -95,10 +98,34 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
       setLockedParticipants(new Set(expense.locked_participant_ids || []));
       setPennyRoundingTargetId(expense.penny_rounding_target_id || '');
       setOpenSection('basic');
-      if (expense.split_participants && expense.split_participants.length > 0) { setSplitParticipantIds(new Set(expense.split_participants)); } else { setSplitParticipantIds(new Set(participants.map(p => p.id))); }
+      if (expense.split_method === 'equally' && expense.split_participants && expense.split_participants.length > 0) { 
+        setSplitParticipantIds(new Set(expense.split_participants)); 
+      } else { 
+      }
     }
-  }, [isOpen, expense, participants]); // ✨ 의존성 배열에서 apiBaseUrl 제거
+  }, [isOpen, expense, participants, project]);
   
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    if (expense.split_method === 'equally' && expense.split_participants?.length > 0) {
+      return;
+    }
+    
+    if (project.type === 'travel') {
+      if (!eventDate) { setSplitParticipantIds(new Set()); return; }
+      const attendingParticipantIds = participants.filter(p => p.attendance?.includes(eventDate)).map(p => p.id);
+      setSplitParticipantIds(new Set(attendingParticipantIds));
+    } else if (project.type === 'gathering') {
+      const roundNum = Number(round);
+      if (!roundNum || roundNum < 1) { setSplitParticipantIds(new Set()); return; }
+      const attendingParticipantIds = participants.filter(p => p.attendance?.includes(roundNum)).map(p => p.id);
+      setSplitParticipantIds(new Set(attendingParticipantIds));
+    } else {
+        setSplitParticipantIds(new Set(participants.map(p => p.id)));
+    }
+  }, [isOpen, eventDate, round, project.type, participants, expense]);
+
   const handleSplitMethodChange = (method) => { setSplitMethod(method); setLockedParticipants(new Set()); setDefaultSplits(method); }
   
   useEffect(() => { if (isOpen && (splitMethod === 'amount' || splitMethod === 'percentage') && lockedParticipants.size === 0) { setDefaultSplits(splitMethod); } }, [amount, isOpen, splitMethod, setDefaultSplits, lockedParticipants.size]);
@@ -116,11 +143,10 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
         newDetails = rebalancedDetails;
         Object.assign(newStrings, rebalancedStrings);
     } else if (splitMethod === 'percentage') {
-        // ✨ [핵심 수정] 100을 초과하는 값을 입력하면 100으로 자동 수정하는 로직
         let numValue = parseFloat(cleanedValue) || 0;
         if (numValue > 100) {
             numValue = 100;
-            newStrings[participantId] = '100'; // 화면에 보이는 값도 100으로 수정
+            newStrings[participantId] = '100';
         }
         newDetails[participantId] = numValue;
         
@@ -141,10 +167,26 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const handleSaveExpense = () => {
     const totalAmount = unformatNumber(amount);
     if (splitMethod === 'equally' && splitParticipantIds.size === 0) { setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.'); return; }
-    if (!desc.trim() || !totalAmount || !payerId || !project?.id) { setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.'); return; }
-     if (splitMethod === 'amount') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(splitSum - totalAmount) > 0.01) { setValidationError(`금액의 합계(${formatNumber(Math.round(splitSum))}원)가 총 지출액(${formatNumber(totalAmount)}원)과 일치하지 않습니다.`); return; }
+    if (!desc.trim() || !totalAmount || !payerId) { setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.'); return; }
+    if (project.type === 'travel' && !eventDate) { setValidationError('지출이 발생한 날짜를 선택해주세요.'); return; }
+    if (project.type === 'gathering' && (!round || round < 1)) { setValidationError('회차를 1 이상의 숫자로 입력해주세요.'); return; }
+    
+    if (splitMethod === 'amount') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(splitSum - totalAmount) > 0.01) { setValidationError(`금액의 합계(${formatNumber(Math.round(splitSum))}원)가 총 지출액(${formatNumber(totalAmount)}원)과 일치하지 않습니다.`); return; }
     } else if (splitMethod === 'percentage') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(100 - splitSum) > 0.1) { setValidationError(`비율의 합계(${splitSum.toFixed(1)}%)가 100%가 되어야 합니다.`); return; } }
-    const updatedExpenseData = { desc, amount: totalAmount, payer_id: Number(payerId), split_method: splitMethod, split_details: splitDetails, category_id: Number(selectedCategory), locked_participant_ids: Array.from(lockedParticipants), penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null, split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [], };
+    
+    const updatedExpenseData = {
+        desc,
+        amount: totalAmount,
+        payer_id: Number(payerId),
+        split_method: splitMethod,
+        split_details: splitDetails,
+        category_id: Number(selectedCategory),
+        locked_participant_ids: Array.from(lockedParticipants),
+        penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null,
+        split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [],
+        eventDate: project.type === 'travel' ? eventDate : null,
+        round: project.type === 'gathering' ? Number(round) : null,
+    };
     onSave(expense.id, updatedExpenseData);
   };
 
@@ -154,7 +196,6 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   
   const renderSplitError = () => {
     const renderError = (total, sum, diff, unit) => (
-      // ✨ [수정] 총액/합계와 오차를 별도의 div로 그룹화
       <div className="split-error-details">
         <div className="split-error-details-main">
           <span>총액: {formatNumber(total)}{unit}</span>
@@ -194,7 +235,26 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
           <div className="form-item-full"><input type="text" value={desc} onChange={e => setDesc(e.target.value)} placeholder="지출 내용" autoFocus /></div>
           <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
           <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => { const numValue = unformatNumber(e.target.value); setAmount(numValue === 0 ? '' : String(numValue)); }} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
-          <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+          <div className="form-item-half form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+
+          {project.type === 'travel' && (
+            <div className="form-item-half form-group">
+              <label htmlFor="event-date-edit">지출일</label>
+              <input id="event-date-edit" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} min={project.startDate} max={project.endDate} />
+            </div>
+          )}
+          {project.type === 'gathering' && (
+            <div className="form-item-half form-group">
+              <label htmlFor="round-edit">회차</label>
+              <select id="round-edit" value={round} onChange={e => setRound(Number(e.target.value))}>
+                {/* ✨ 프로젝트에 저장된 회차와, 지출 내역에만 있는 회차를 모두 합쳐서 보여줌 */}
+                {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
+                  <option key={r} value={r}>{r}차</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
           {splitMethod === 'equally' && (
               <>
@@ -226,6 +286,24 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
               <div className="form-item-half form-group"><label htmlFor="category-select-edit">카테고리</label><select id="category-select-edit" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>{categories.map(c => (<option key={c.id} value={c.id}>{c.emoji} {c.name}</option>))}</select></div>
               <div className="form-item-half floating-label-group"><input id="expense-amount-edit-modal" type="text" value={amount} onChange={e => setAmount(e.target.value)} onBlur={e => setAmount(formatNumber(unformatNumber(e.target.value)))} onFocus={e => { const numValue = unformatNumber(e.target.value); setAmount(numValue === 0 ? '' : String(numValue)); }} placeholder=" " inputMode="numeric" /><label htmlFor="expense-amount-edit-modal">금액</label><span className="unit">원</span></div>
               <div className="form-item-full form-group"><label htmlFor="payer-select-edit">결제자</label><select id="payer-select-edit" value={payerId} onChange={e => setPayerId(e.target.value)}><option value="" disabled>선택</option>{participants.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
+              
+              {project.type === 'travel' && (
+                <div className="form-item-full form-group">
+                  <label htmlFor="event-date-edit-mobile">지출일</label>
+                  <input id="event-date-edit-mobile" type="date" value={eventDate} onChange={e => setEventDate(e.target.value)} min={project.startDate} max={project.endDate} />
+                </div>
+              )}
+              {project.type === 'gathering' && (
+                <div className="form-item-half form-group">
+                  <label htmlFor="round-edit-mobile">회차</label>
+                  <select id="round-edit-mobile" value={round} onChange={e => setRound(Number(e.target.value))}>
+                    {/* ✨ 프로젝트에 저장된 회차와, 지출 내역에만 있는 회차를 모두 합쳐서 보여줌 */}
+                    {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
+                      <option key={r} value={r}>{r}차</option>
+                    ))}
+                  </select>
+                </div>
+              )}
           </AccordionSection>
           <AccordionSection title="분배 방식" subtitle={splitMethodText} isOpen={openSection === 'split'} onToggle={() => handleToggleSection('split')}>
               <div className="form-item-full split-method-selector"><button type="button" className={splitMethod === 'equally' ? 'active' : ''} onClick={() => handleSplitMethodChange('equally')}>균등 부담</button><button type="button" className={splitMethod === 'amount' ? 'active' : ''} onClick={() => handleSplitMethodChange('amount')}>금액 지정</button><button type="button" className={splitMethod === 'percentage' ? 'active' : ''} onClick={() => handleSplitMethodChange('percentage')}>비율 지정</button></div>
@@ -251,7 +329,6 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
             subtitle={roundingTargetName ? `10원 미만 몰아주기: ${roundingTargetName}` : '선택 안함'}
             isOpen={openSection === 'options'}
             onToggle={() => handleToggleSection('options')}
-            // ✨ [핵심 수정] 아래 disabled 속성을 추가합니다.
             disabled={isMobile && (splitMethod === 'amount' || splitMethod === 'percentage')}
           >
         <div className="form-item-full">

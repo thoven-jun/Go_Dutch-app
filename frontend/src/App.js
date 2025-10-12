@@ -16,8 +16,6 @@ import ParticipantOrderModal from './ParticipantOrderModal';
 import DestructiveActionModal from './DestructiveActionModal';
 import './App.css';
 
-// Settings.js import는 삭제되었습니다.
-
 const MenuIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg> );
 
 function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
@@ -45,7 +43,6 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDup
   />;
 }
 
-// ✨ 프로젝트 설정 페이지 Wrapper
 function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal, closeAlert, openDestructiveModal, closeDestructiveModal }) {
   return <ProjectSettings
     projects={projects}
@@ -60,7 +57,6 @@ function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicate
   />;
 }
 
-// ✨ 참여자 목록 페이지 Wrapper
 function ParticipantManagerWrapper({ projects, onUpdate, apiBaseUrl, onOpenOrderModal }) {
     const { projectId } = useParams();
     const project = projects.find(p => p.id === parseInt(projectId));
@@ -87,10 +83,8 @@ function AppContent() {
   const [orderModalInfo, setOrderModalInfo] = useState({ isOpen: false, project: null });
   const [participantListStates, setParticipantListStates] = useState({});
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState(new Set());
-
   const navigate = useNavigate();
 
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
@@ -152,32 +146,40 @@ function AppContent() {
     fetchProjects();
   }, [fetchProjects]);
 
-  const handleCreateProject = (projectName, participantNames) => {
-    let newProjectData;
+  const handleCreateProject = (projectData) => {
+    let newProjectResponse;
     fetch(`${apiBaseUrl}/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: projectName, participants: [], expenses: [] })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            name: projectData.name,
+            type: projectData.type,
+            startDate: projectData.startDate,
+            endDate: projectData.endDate,
+            participants: [],
+            expenses: []
+        })
     })
     .then(res => res.json())
     .then(newProject => {
-      newProjectData = newProject;
-      if (participantNames && participantNames.length > 0) {
-        const addParticipantPromises = participantNames.map(name => {
-          return fetch(`${apiBaseUrl}/projects/${newProject.id}/participants`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name })
-          });
-        });
-        return Promise.all(addParticipantPromises);
-      }
-      return Promise.resolve();
+        newProjectResponse = newProject;
+        const participantNames = projectData.participants;
+        if (participantNames && participantNames.length > 0) {
+            const addParticipantPromises = participantNames.map(name => {
+                return fetch(`${apiBaseUrl}/projects/${newProject.id}/participants`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name })
+                });
+            });
+            return Promise.all(addParticipantPromises);
+        }
+        return Promise.resolve();
     })
     .then(() => {
-      fetchProjects();
-      closeCreateProjectModal();
-      navigate(`/project/${newProjectData.id}`);
+        fetchProjects();
+        closeCreateProjectModal();
+        navigate(`/project/${newProjectResponse.id}`);
     })
     .catch(error => console.error("Error creating project:", error));
   };
@@ -293,7 +295,6 @@ function AppContent() {
   const handleCloseMobileSidebar = () => {
     setIsMobileSidebarOpen(false);
     if (isSelectionMode) {
-      // toggleSelectionMode를 호출하여 선택 모드를 끄고, 선택된 프로젝트 목록도 초기화합니다.
       toggleSelectionMode();
     }
   };

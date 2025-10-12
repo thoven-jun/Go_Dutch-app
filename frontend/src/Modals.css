@@ -816,6 +816,67 @@
   opacity: 0.5;
 }
 
+/* --- [추가] 프로젝트 생성 모달 - 유형 선택 UI --- */
+.create-project-modal .project-type-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.create-project-modal .project-type-button {
+  padding: 12px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: white;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+.create-project-modal .project-type-button:hover {
+  background-color: var(--bg-color);
+}
+.create-project-modal .project-type-button.active {
+  background-color: var(--accent-color-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+.create-project-modal .date-range-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.create-project-modal .date-range-picker .date-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.create-project-modal .date-range-picker label {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+.create-project-modal .date-range-picker input[type="date"] {
+  height: 40px;
+  padding: 8px;
+}
+.create-project-modal .date-range-picker .tilde {
+  margin-top: 18px;
+  color: var(--text-secondary);
+}
+
+/* 지출일(date)과 회차(number) 입력 필드의 텍스트를 오른쪽으로 정렬합니다. */
+.add-expense-modal .form-group input[type="date"],
+.add-expense-modal .form-group input[type="number"] {
+  text-align: right;
+}
+
+/* 날짜 필드는 달력 아이콘과 겹치지 않도록 오른쪽 여백을 줍니다. */
+.add-expense-modal .form-group input[type="date"] {
+  padding-right: 12px;
+}
+
+
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {

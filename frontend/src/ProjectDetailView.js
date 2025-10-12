@@ -1,29 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import './ProjectDetailView.css';
 
-// --- 숫자 서식 헬퍼 함수 ---
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '';
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
-// --- 아이콘 SVG들 ---
+const projectTypeMap = {
+  general: '일반',
+  travel: '여행',
+  gathering: '회식/모임'
+};
+
 const DeleteIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> );
 const ChevronIcon = ({ isExpanded }) => ( <svg className={`chevron-icon ${isExpanded ? 'expanded' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> );
 const ManageIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H4"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg> );
 const EditIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> );
 const InfoIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> );
 const SettingsIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> );
+const MoreIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg> );
+
+const groupAndSortExpenses = (expenses, projectType, projectStartDate) => {
+  if (projectType === 'general' || !projectType) {
+    return { '전체': expenses };
+  }
+
+  const grouped = expenses.reduce((acc, expense) => {
+    let key = '미분류';
+    if (projectType === 'travel') {
+      if (expense.eventDate) {
+        const date = new Date(expense.eventDate);
+        const startDate = new Date(projectStartDate);
+        const diffTime = Math.abs(date - startDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        key = `${diffDays}일차 (${date.toLocaleDateString()})`;
+      } else {
+        key = '날짜 미지정';
+      }
+    } else if (projectType === 'gathering') {
+      key = expense.round ? `${expense.round}차` : '회차 미지정';
+    }
+
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(expense);
+    return acc;
+  }, {});
+  
+  const sortedKeys = Object.keys(grouped).sort((a, b) => {
+    if (projectType === 'travel') {
+      const dayA = parseInt(a.split('일차')[0]);
+      const dayB = parseInt(b.split('일차')[0]);
+      return dayA - dayB;
+    } else if (projectType === 'gathering') {
+      const roundA = parseInt(a.split('차')[0]);
+      const roundB = parseInt(b.split('차')[0]);
+      return roundA - roundB;
+    }
+    return 0;
+  });
+
+  const sortedGrouped = {};
+  for (const key of sortedKeys) {
+    sortedGrouped[key] = grouped[key];
+  }
+  return sortedGrouped;
+};
 
 function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, isParticipantsExpanded, onToggleParticipants }) {
-  // const [isParticipantsExpanded, setIsParticipantsExpanded] = useState(true);
 
   const [disableTransition, setDisableTransition] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // ✨ [추가] 더보기 메뉴 상태
+  const menuRef = useRef(null); // ✨ [추가] 메뉴 참조
+
+  useEffect(() => {
+    // ✨ [추가] 메뉴 외부 클릭 시 닫기
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     setDisableTransition(true);
-    const timer = setTimeout(() => setDisableTransition(false), 50); // 50ms 후 다시 활성화
+    const timer = setTimeout(() => setDisableTransition(false), 50);
     return () => clearTimeout(timer);
   }, [project.id]);
 
@@ -43,37 +108,106 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
   };
 
   if (!project) {
-    // 이 부분은 App.js에서 처리하므로 사실상 실행되지 않지만, 안전을 위해 남겨둡니다.
     return <div>프로젝트를 선택해주세요.</div>;
   }
 
   const totalAmount = project.expenses.reduce((sum, e) => sum + e.amount, 0);
   const perPersonAmount = project.participants.length > 0 ? Math.round(totalAmount / project.participants.length) : 0;
   const participants = [...(project.participants || [])].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
-  const expenses = project.expenses || [];
+  
+  const groupedExpenses = groupAndSortExpenses(project.expenses || [], project.type, project.startDate);
+
+  const renderExpenseGroups = () => {
+    return Object.entries(groupedExpenses).map(([groupTitle, expensesInGroup]) => {
+      if (project.type === 'general' || !project.type) {
+        return (
+          <ul key="all-expenses" className="item-list expense-list">
+            {expensesInGroup.map(e => renderExpenseItem(e))}
+          </ul>
+        );
+      }
+      const groupTotal = expensesInGroup.reduce((sum, e) => sum + e.amount, 0);
+      return (
+        <div key={groupTitle} className="expense-group">
+          <div className="expense-group-header">
+            <span>{groupTitle}</span>
+            <span className="group-total">{formatNumber(groupTotal)}원</span>
+          </div>
+          <ul className="item-list">
+            {expensesInGroup.map(e => renderExpenseItem(e))}
+          </ul>
+        </div>
+      );
+    });
+  };
+
+  const renderExpenseItem = (e) => {
+    const payer = participants.find(p => p.id === e.payer_id);
+    let splitCount = 0;
+    if (e.split_method === 'equally') {
+      splitCount = e.split_participants?.length > 0 ? e.split_participants.length : participants.length;
+    } else {
+      splitCount = Object.keys(e.split_details || {}).length;
+    }
+
+    return (
+      <li key={e.id} className="expense-item" onClick={() => openEditExpenseModal(project, e)}>
+        <div className="expense-item-info">
+          <div className="expense-item-icon">{e.category?.emoji || '⚪️'}</div>
+          <div className="expense-item-desc">{e.desc}</div>
+        </div>
+        <div className="expense-item-details">
+          <div className="expense-item-amount">{formatNumber(e.amount)}원</div>
+          <div className="expense-item-payer">
+            <span className="payer-label">결제:</span>
+            <span className="payer-name">{payer ? payer.name : '알 수 없음'}</span>
+            {splitCount > 0 && <span className="split-count">({splitCount}명)</span>}
+          </div>
+        </div>
+        <div className="expense-item-actions">
+          <button 
+            onClick={(event) => {
+              event.stopPropagation(); 
+              handleDeleteExpense(e.id);
+            }} 
+            className="action-button"
+          >
+            <DeleteIcon />
+          </button>
+        </div>
+      </li>
+    );
+  };
 
   return (
     <div className="detail-container">
       <header className="detail-header">
+        {/* ✨ [핵심 수정] 헤더 구조 변경 */}
         <div className="detail-title-group">
-          <h2 className="detail-title" title={project.name}>
-            {project.name}
-          </h2>
-          <button 
-            className="title-edit-button" 
-            onClick={() => onOpenRenameModal(project.id, project.name)}
-            title="프로젝트 이름 변경"
-          >
-            <EditIcon />
-          </button>
-          <Link to={`/project/${project.id}/settings`} className="title-edit-button" title="프로젝트 설정">
-            <SettingsIcon />
-          </Link>
-          {/* ▲▲▲▲▲ [추가] 완료 ▲▲▲▲▲ */}
+          <h2 className="detail-title" title={project.name}>{project.name}</h2>
+          {project.type && <span className="project-type-badge">{projectTypeMap[project.type]}</span>}
         </div>
-        <Link to={`/project/${project.id}/settlement`} className="settle-button">
-          정산하기
-        </Link>
+        
+        <div className="header-actions">
+          <div className="more-menu-container" ref={menuRef}>
+            <button className="more-menu-button" title="더보기" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              <MoreIcon />
+            </button>
+            {isMenuOpen && (
+              <div className="header-dropdown-menu">
+                <button onClick={() => { onOpenRenameModal(project.id, project.name); setIsMenuOpen(false); }}>
+                  <EditIcon /> 이름 변경
+                </button>
+                <Link to={`/project/${project.id}/settings`} onClick={() => setIsMenuOpen(false)}>
+                  <SettingsIcon /> 설정
+                </Link>
+              </div>
+            )}
+          </div>
+          <Link to={`/project/${project.id}/settlement`} className="settle-button">
+            정산하기
+          </Link>
+        </div>
       </header>
       
       <div className="content-body">
@@ -84,7 +218,7 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
           >
             <div className="section-title-group">
               <h2>참여자 ({participants.length}명)</h2>
-              <Link to={`/project/${project.id}/settings`} className="manage-icon-button" onClick={e => e.stopPropagation()}>
+              <Link to={`/project/${project.id}/settings#participants`} className="manage-icon-button" onClick={e => e.stopPropagation()}>
                 <ManageIcon />
               </Link>
             </div>
@@ -100,7 +234,7 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
 
         <div className="detail-section expense-section">
           <div className="section-header">
-            <h2>지출 내역 ({expenses.length}건)</h2>
+            <h2>지출 내역 ({project.expenses.length}건)</h2>
             <button 
               className="add-expense-button" 
               onClick={() => openAddExpenseModal(project)}
@@ -108,47 +242,9 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
               지출 항목 추가
             </button>
           </div>
-          <ul className="item-list expense-list">
-            {expenses.map((e) => {
-              const payer = participants.find(p => p.id === e.payer_id);
-
-              let splitCount = 0;
-              if (e.split_method === 'equally') {
-                splitCount = e.split_participants?.length > 0 ? e.split_participants.length : participants.length;
-              } else {
-                splitCount = Object.keys(e.split_details || {}).length;
-              }
-
-              return (
-                <li key={e.id} className="expense-item" onClick={() => openEditExpenseModal(project, e)}>
-                  <div className="expense-item-info">
-                    <div className="expense-item-icon">{e.category?.emoji || '⚪️'}</div>
-                    <div className="expense-item-desc">{e.desc}</div>
-                  </div>
-                  <div className="expense-item-details">
-                    <div className="expense-item-amount">{formatNumber(e.amount)}원</div>
-                    {/* ✨ [수정] 결제자 정보를 라벨과 이름으로 분리 */}
-                    <div className="expense-item-payer">
-                      <span className="payer-label">결제:</span>
-                      <span className="payer-name">{payer ? payer.name : '알 수 없음'}</span>
-                      {splitCount > 0 && <span className="split-count">({splitCount}명)</span>}
-                    </div>
-                  </div>
-                  <div className="expense-item-actions">
-                    <button 
-                      onClick={(event) => {
-                        event.stopPropagation(); 
-                        handleDeleteExpense(e.id);
-                      }} 
-                      className="action-button"
-                    >
-                      <DeleteIcon />
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="expense-list">
+            {renderExpenseGroups()}
+          </div>
         </div>
       </div>
 

@@ -6,7 +6,6 @@ const fs = require('fs');
 const dbTemplatePath = 'db.template.json';
 const dbPath = 'db.json';
 
-// db.json 파일이 없으면 db.template.json을 복사해서 생성
 if (!fs.existsSync(dbPath)) {
   fs.copyFileSync(dbTemplatePath, dbPath);
 }
@@ -14,19 +13,16 @@ if (!fs.existsSync(dbPath)) {
 const router = jsonServer.router(dbPath);
 
 server.use(middlewares);
-// ✨ [수정] json-server.bodyParser -> jsonServer.bodyParser
 server.use(jsonServer.bodyParser);
 
-// 데이터베이스 파일을 읽고 쓰는 헬퍼 함수
 const readDb = () => JSON.parse(fs.readFileSync('db.json', 'UTF-8'));
 const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
 
 // --- 사용자 정의 라우트 ---
 
-// [수정] 새 프로젝트 생성 시, 기본 카테고리를 함께 생성
 server.post('/projects', (req, res) => {
   const db = readDb();
-  const { name, participants, expenses } = req.body;
+  const { name, participants, expenses, type = 'general', startDate = null, endDate = null } = req.body;
 
   const allIds = [
     ...db.projects.map(p => p.id),
@@ -46,10 +42,12 @@ server.post('/projects', (req, res) => {
   const newProject = {
     id: maxId + 1,
     name: name || "새 프로젝트",
+    type, startDate, endDate,
     participants: participants || [],
     expenses: expenses || [],
     createdDate: new Date().toISOString(),
-    categories: defaultCategories.map((cat, index) => ({...cat, id: index + 1}))
+    categories: defaultCategories.map((cat, index) => ({...cat, id: index + 1})),
+    ...(type === 'gathering' && { rounds: [] }) // 회식/모임 유형일 때만 rounds 추가
   };
 
   db.projects.push(newProject);
@@ -57,7 +55,6 @@ server.post('/projects', (req, res) => {
   res.status(201).jsonp(newProject);
 });
 
-// [수정] 프로젝트 목록을 가져올 때, 각 프로젝트의 카테고리를 기준으로 지출 내역과 연결
 server.get('/projects', (req, res) => {
   const db = readDb();
   const projectsWithDetails = db.projects.map(project => {
@@ -74,9 +71,6 @@ server.get('/projects', (req, res) => {
   res.jsonp(projectsWithDetails);
 });
 
-// --- ✨ 프로젝트별 카테고리 관리 API ---
-
-// 특정 프로젝트의 카테고리 목록 가져오기
 server.get('/projects/:projectId/categories', (req, res) => {
   const { projectId } = req.params;
   const db = readDb();
@@ -88,7 +82,6 @@ server.get('/projects/:projectId/categories', (req, res) => {
   }
 });
 
-// 특정 프로젝트에 카테고리 추가
 server.post('/projects/:projectId/categories', (req, res) => {
   const { projectId } = req.params;
   const { name, emoji } = req.body;
@@ -107,11 +100,10 @@ server.post('/projects/:projectId/categories', (req, res) => {
   }
 });
 
-// 카테고리 수정 (ID를 이용해 전체 프로젝트에서 검색)
 server.patch('/categories/:id', (req, res) => {
     const { id } = req.params;
     const categoryId = parseInt(id);
-    const { name, emoji, projectId } = req.body; // projectId 힌트를 받음
+    const { name, emoji, projectId } = req.body;
     const db = readDb();
     const project = db.projects.find(p => p.id === parseInt(projectId));
 
@@ -124,7 +116,6 @@ server.patch('/categories/:id', (req, res) => {
         return res.status(200).jsonp(category);
       }
     }
-    // 만약 projectId 힌트가 없거나 못찾았을 경우 전체 탐색 (느릴 수 있음)
     for (const p of db.projects) {
         const category = p.categories?.find(c => c.id === categoryId);
         if (category) {
@@ -137,11 +128,10 @@ server.patch('/categories/:id', (req, res) => {
     res.status(404).jsonp({ error: "Category not found in any project" });
 });
 
-// 카테고리 삭제 (ID를 이용해 전체 프로젝트에서 검색)
 server.delete('/categories/:id', (req, res) => {
     const { id } = req.params;
     const categoryId = parseInt(id);
-    const { projectId } = req.body; // projectId 힌트를 받음
+    const { projectId } = req.body;
     const db = readDb();
     const project = db.projects.find(p => p.id === parseInt(projectId));
 
@@ -160,9 +150,6 @@ server.delete('/categories/:id', (req, res) => {
     res.status(404).jsonp({ error: "Category not found in the specified project" });
 });
 
-
-// --- 기존 프로젝트, 참여자, 지출 관련 API ---
-
 server.delete('/projects/:id', (req, res) => {
   const { id } = req.params;
   const projectId = parseInt(id);
@@ -177,7 +164,7 @@ server.delete('/projects/:id', (req, res) => {
   }
 });
 
-server.patch('/participants/:id', (req, res) => {
+server.patch('/participants/:id/name', (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   const db = readDb();
@@ -192,7 +179,28 @@ server.patch('/participants/:id', (req, res) => {
   }
   if (participantFound) {
     writeDb(db);
-    res.status(200).jsonp(req.body);
+    res.status(200).jsonp({ name });
+  } else {
+    res.status(404).jsonp({ error: "Participant not found" });
+  }
+});
+
+server.patch('/participants/:id/attendance', (req, res) => {
+  const { id } = req.params;
+  const { attendance } = req.body;
+  const db = readDb();
+  let participantFound = false;
+  for (const project of db.projects) {
+    const participant = project.participants?.find(p => p.id === parseInt(id));
+    if (participant) {
+      participant.attendance = attendance;
+      participantFound = true;
+      break;
+    }
+  }
+  if (participantFound) {
+    writeDb(db);
+    res.status(200).jsonp({ attendance });
   } else {
     res.status(404).jsonp({ error: "Participant not found" });
   }
@@ -200,16 +208,67 @@ server.patch('/participants/:id', (req, res) => {
 
 server.patch('/projects/:id', (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, startDate, endDate } = req.body;
   const db = readDb();
   const project = db.projects.find(p => p.id === parseInt(id));
+
   if (project) {
-    project.name = name;
+    if (name) {
+      project.name = name;
+    }
+    if (project.type === 'travel') {
+      const oldStartDate = new Date(project.startDate);
+      const oldEndDate = new Date(project.endDate);
+      const newStartDate = startDate ? new Date(startDate) : null;
+      const newEndDate = endDate ? new Date(endDate) : null;
+
+      if ((newStartDate && newStartDate > oldStartDate) || (newEndDate && newEndDate < oldEndDate)) {
+        const expensesToCheck = project.expenses || [];
+        const hasExpensesInRemovedDates = expensesToCheck.some(expense => {
+          const expenseDate = new Date(expense.eventDate);
+          if (newStartDate && expenseDate < newStartDate) return true;
+          if (newEndDate && expenseDate > newEndDate) return true;
+          return false;
+        });
+        if (hasExpensesInRemovedDates) {
+          return res.status(400).jsonp({ error: "삭제될 날짜에 지출 내역이 존재하여 기간을 수정할 수 없습니다." });
+        }
+      }
+      if(startDate) project.startDate = startDate;
+      if(endDate) project.endDate = endDate;
+    }
+
     writeDb(db);
     res.status(200).jsonp(project);
   } else {
     res.status(404).jsonp({ error: "Project not found" });
   }
+});
+
+server.patch('/projects/:projectId/rounds', (req, res) => {
+    const { projectId } = req.params;
+    const { rounds } = req.body;
+    const db = readDb();
+    const project = db.projects.find(p => p.id === parseInt(projectId));
+
+    if (project) {
+        const oldRounds = new Set(project.rounds || []);
+        const newRounds = new Set(rounds || []);
+        
+        const deletedRounds = [...oldRounds].filter(r => !newRounds.has(r));
+        
+        const expensesInDeletedRounds = project.expenses.filter(e => deletedRounds.includes(e.round));
+        if (expensesInDeletedRounds.length > 0) {
+            const usedRounds = [...new Set(expensesInDeletedRounds.map(e => e.round))];
+            return res.status(400).jsonp({ error: `${usedRounds.join(', ')}차는 지출 내역에서 사용 중이므로 삭제할 수 없습니다.` });
+        }
+
+        project.rounds = rounds.sort((a,b) => a-b);
+        writeDb(db);
+        res.status(200).jsonp(project);
+    } else {
+        res.status(404).jsonp({ error: "Project not found" });
+    }
 });
 
 server.post('/projects/:projectId/participants', (req, res) => {
@@ -225,7 +284,25 @@ server.post('/projects/:projectId/participants', (req, res) => {
       ...db.projects.flatMap(p => p.expenses?.map(e => e.id) || [])
     ].filter(id => id != null);
     const maxId = Math.max(0, ...allIds);
-    const newParticipant = { id: maxId + 1, name: name, orderIndex: project.participants.length };
+    
+    let initialAttendance = [];
+    if (project.type === 'travel' && project.startDate && project.endDate) {
+      const start = new Date(project.startDate);
+      const end = new Date(project.endDate);
+      let current = new Date(start);
+      while (current <= end) {
+        initialAttendance.push(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    }
+    
+    const newParticipant = { 
+      id: maxId + 1, 
+      name: name, 
+      orderIndex: project.participants.length,
+      attendance: initialAttendance
+    };
+
     project.participants.push(newParticipant);
     writeDb(db);
     res.status(201).jsonp(newParticipant);
@@ -284,7 +361,8 @@ server.get('/projects/:projectId/settlement', (req, res) => {
 
     const participants = project.participants || [];
     const expenses = project.expenses || [];
-    const participantMap = new Map(participants.map(p => [p.id, p.name]));
+    const participantMap = new Map(participants.map(p => [p.id, p]));
+    const participantNameMap = new Map(participants.map(p => [p.id, p.name]));
 
     if (participants.length === 0) {
         return res.json({ totalAmount: 0, participantCount: 0, perPersonAmount: 0, netTransfers: [], grossTransfers: [] });
@@ -297,8 +375,21 @@ server.get('/projects/:projectId/settlement', (req, res) => {
     const grossTransfersMap = new Map();
 
     expenses.forEach(expense => {
-        const { amount, payer_id, split_method = 'equally', split_details = {}, penny_rounding_target_id, split_participants } = expense;
-        const involvedParticipantIds = (split_participants && split_participants.length > 0) ? split_participants : participants.map(p => p.id);
+        const { amount, payer_id, split_method = 'equally', split_details = {}, penny_rounding_target_id, split_participants, eventDate, round } = expense;
+        
+        let involvedParticipantIds;
+        if (split_participants && split_participants.length > 0) {
+            involvedParticipantIds = split_participants;
+        } 
+        else if (project.type === 'travel' && eventDate) {
+            involvedParticipantIds = participants.filter(p => p.attendance?.includes(eventDate)).map(p => p.id);
+        } else if (project.type === 'gathering' && round) {
+            involvedParticipantIds = participants.filter(p => p.attendance?.includes(round)).map(p => p.id);
+        }
+        else {
+            involvedParticipantIds = participants.map(p => p.id);
+        }
+
         const involvedParticipants = participants.filter(p => involvedParticipantIds.includes(p.id));
 
         if (involvedParticipants.length === 0) return;
@@ -308,7 +399,7 @@ server.get('/projects/:projectId/settlement', (req, res) => {
 
         if (split_method === 'equally') {
             const targetId = penny_rounding_target_id;
-            if (targetId && participants.some(p => p.id === targetId)) {
+            if (targetId && involvedParticipants.some(p => p.id === targetId)) {
                 const idealShare = amount / involvedParticipants.length;
                 let totalRoundedDown = 0;
                 involvedParticipants.forEach(p => {
@@ -343,11 +434,13 @@ server.get('/projects/:projectId/settlement', (req, res) => {
         Object.entries(expenseShares).forEach(([participantId, share]) => {
             totalOwedBy[participantId] += share;
             if (Number(participantId) !== payer_id && share > 0) {
-                const from = participantMap.get(Number(participantId));
-                const to = participantMap.get(payer_id);
-                const key = `${from}→${to}`;
-                const currentAmount = grossTransfersMap.get(key) || 0;
-                grossTransfersMap.set(key, currentAmount + share);
+                const from = participantNameMap.get(Number(participantId));
+                const to = participantNameMap.get(payer_id);
+                if (from && to) {
+                    const key = `${from}→${to}`;
+                    const currentAmount = grossTransfersMap.get(key) || 0;
+                    grossTransfersMap.set(key, currentAmount + share);
+                }
             }
         });
     });
@@ -393,28 +486,39 @@ server.delete('/participants/:id', (req, res) => {
   const participantId = parseInt(id);
   const db = readDb();
   let participantFound = false;
+
   db.projects.forEach(project => {
     const participantIndex = project.participants?.findIndex(p => p.id === participantId);
     if (participantIndex > -1) {
       participantFound = true;
-      const isPayer = project.expenses?.some(e => e.payer_id === participantId);
-      if (isPayer) {
-        project.expenses = project.expenses.filter(e => e.payer_id !== participantId);
-      }
+      
+      // 1. 해당 참여자가 '결제자'인 지출 내역을 삭제
+      project.expenses = project.expenses?.filter(e => e.payer_id !== participantId) || [];
+
+      // 2. 남은 지출 내역들을 순회하며 해당 참여자 정보 정리
       project.expenses?.forEach(expense => {
-        if (expense.split_method !== 'equally' && expense.split_details?.[participantId]) {
+        // 2-1. '균등 분배'의 분담 목록에서 제거
+        if (expense.split_participants?.includes(participantId)) {
+          expense.split_participants = expense.split_participants.filter(id => id !== participantId);
+        }
+        // 2-2. '금액/비율 지정'의 상세 정보에서 제거
+        if (expense.split_details && expense.split_details[participantId] !== undefined) {
           delete expense.split_details[participantId];
-          expense.split_method = 'equally';
-          expense.split_details = {};
+          // ✨ 중요: 상세 분배 정보가 변경되었으므로, 데이터 정합성을 위해 균등 분배로 초기화
+          expense.split_method = 'equally'; 
+          expense.split_participants = Object.keys(expense.split_details).map(Number);
           expense.locked_participant_ids = [];
         }
       });
+
+      // 3. 참여자 목록에서 최종적으로 삭제
       project.participants.splice(participantIndex, 1);
     }
   });
+
   if (participantFound) {
     writeDb(db);
-    res.status(200).jsonp({});
+    res.status(200).jsonp({ message: 'Participant deleted successfully' });
   } else {
     res.status(404).jsonp({ error: "Participant not found" });
   }
