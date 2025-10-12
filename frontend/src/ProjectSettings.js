@@ -483,7 +483,7 @@ function ProjectSettings({ projects, onUpdate, showAlert, openDestructiveModal, 
                     {editingCategory.id === cat.id ? (
                       <div className="edit-form"> <EmojiPicker selectedEmoji={editingCategory.emoji} onSelect={(emoji) => setEditingCategory({...editingCategory, emoji})} /> <input type="text" className="name-input" value={editingCategory.name} onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} autoFocus /> <div className="category-actions"> <button onClick={handleSaveEditingCategory} className="action-button save-button"><SaveIcon /></button> <button onClick={handleCancelEditingCategory} className="action-button cancel-button"><CancelIcon /></button> </div> </div>
                     ) : (
-                      <> <div className="category-info"> <span className="category-emoji">{cat.emoji}</span> <span className="category-name">{cat.name}</span> </div> <div className="category-actions"> <button onClick={() => handleStartEditingCategory(cat)} className="action-button"><EditIcon /></button> <button onClick={() => handleDeleteCategory(cat.id)} className="action-button"><DeleteIcon /></button> </div> </>
+                      <> <div className="category-info"> <span className="category-emoji">{cat.emoji}</span> <span className="category-name">{cat.name}</span> </div> <div className="category-actions"> <button onClick={() => handleStartEditingCategory(cat)} className="action-button"><EditIcon /></button> <button onClick={() => handleDeleteCategory(cat.id)} className="action-button" disabled={cat.isDeletable === false} title={cat.isDeletable === false ? '이 카테고리는 삭제할 수 없습니다.' : ''}><DeleteIcon /></button> </div> </>
                     )}
                   </li>
                 ))}

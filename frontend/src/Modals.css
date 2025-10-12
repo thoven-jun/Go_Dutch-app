@@ -876,7 +876,68 @@
   padding-right: 12px;
 }
 
+/* --- [추가] 숙박비 정산 도우미 UI --- */
+.lodging-period-selector {
+  width: 100%;
+  background-color: var(--accent-color-light);
+  border: 1px solid var(--primary-color-light);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.lodging-period-selector .date-range-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.lodging-period-selector .date-input-group {
+  flex: 1;
+}
+.lodging-period-selector .recalculate-button {
+  padding: 8px 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  align-self: flex-end; /* 날짜 필드와 세로 정렬을 맞춥니다. */
+  height: 40px;
+}
 
+.lodging-period-selector .recalculate-button:hover {
+  background-color: var(--bg-color);
+  border-color: #adb5bd;
+}
+.lodging-period-selector label {
+  font-size: 0.8em;
+  font-weight: 500;
+  color: var(--primary-color);
+  display: block;
+  margin-bottom: 4px;
+}
+.lodging-period-selector input {
+  height: 40px !important;
+  padding: 8px !important;
+}
+.lodging-period-selector .tilde {
+  margin-top: 20px;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+/* ✨ [추가] 분배 방식 안내 문구 스타일 */
+.split-detail-notice {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary-color);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: -5px 0 15px 0;
+  line-height: 1.5;
+}
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
@@ -901,7 +962,12 @@
   .modal-footer {
     flex-shrink: 0;
   }
-
+  .add-expense-modal .expense-form,
+  .edit-expense-modal .expense-form {
+    flex-grow: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
   .add-expense-modal .expense-form > div {
     margin-bottom: 16px;
   }
@@ -973,6 +1039,21 @@
   .split-error-details-main {
     display: flex;
     gap: 12px; /* '총액'과 '합계' 사이의 간격 */
+  }
+
+  /* ▼▼▼▼▼ [추가] 모바일 숙박 기간 선택 UI 수정 ▼▼▼▼▼ */
+  .lodging-period-selector .date-range-form {
+    flex-direction: column; /* 세로 방향으로 쌓도록 변경 */
+    align-items: stretch;   /* 내부 아이템들이 100% 너비를 갖도록 설정 */
+    gap: 12px;              /* 아이템 사이의 간격 조정 */
+  }
+
+  .lodging-period-selector .tilde {
+    display: none; /* 세로 정렬에서는 물결표(~) 숨김 */
+  }
+  .lodging-period-selector .recalculate-button {
+    width: 100%;
+    margin-top: 4px;
   }
 }
 

@@ -22,7 +22,7 @@ const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null,
 
 server.post('/projects', (req, res) => {
   const db = readDb();
-  const { name, participants, expenses, type = 'general', startDate = null, endDate = null } = req.body;
+  const { name, type = 'general', startDate = null, endDate = null } = req.body;
 
   const allIds = [
     ...db.projects.map(p => p.id),
@@ -31,29 +31,58 @@ server.post('/projects', (req, res) => {
   ].filter(id => id != null);
   const maxId = Math.max(0, ...allIds);
 
-  const defaultCategories = [
-    { "id": 1, "name": "식비", "emoji": "🍔" },
-    { "id": 2, "name": "교통비", "emoji": "🚗" },
-    { "id": 3, "name": "쇼핑", "emoji": "🛍️" },
-    { "id": 4, "name": "문화생활", "emoji": "🎬" },
-    { "id": 5, "name": "기타", "emoji": "⚪️" }
-  ];
+  const defaultCategorySet = {
+    food: { "name": "식비", "emoji": "🍔", "isDeletable": false },
+    transport: { "name": "교통비", "emoji": "🚗", "isDeletable": false },
+    lodging: { "name": "숙박", "emoji": "🏨", "isDeletable": false },
+    shopping: { "name": "쇼핑", "emoji": "🛍️", "isDeletable": true },
+    culture: { "name": "문화생활", "emoji": "🎬", "isDeletable": true },
+    misc: { "name": "기타", "emoji": "⚪️", "isDeletable": true }
+  };
+
+  let projectCategories = [];
+  
+  if (type === 'travel') {
+    projectCategories = [
+      defaultCategorySet.food,
+      defaultCategorySet.lodging,
+      defaultCategorySet.transport,
+      defaultCategorySet.shopping,
+      defaultCategorySet.culture,
+      defaultCategorySet.misc
+    ];
+  } else { // For 'general' and 'gathering'
+    projectCategories = [
+      defaultCategorySet.food,
+      defaultCategorySet.transport,
+      defaultCategorySet.shopping,
+      defaultCategorySet.culture,
+      defaultCategorySet.misc
+    ];
+  }
+  
+  const finalCategories = projectCategories.map((cat, index) => ({
+      id: index + 1,
+      ...cat
+  }));
 
   const newProject = {
     id: maxId + 1,
     name: name || "새 프로젝트",
     type, startDate, endDate,
-    participants: participants || [],
-    expenses: expenses || [],
+    participants: [],
+    expenses: [],
     createdDate: new Date().toISOString(),
-    categories: defaultCategories.map((cat, index) => ({...cat, id: index + 1})),
-    ...(type === 'gathering' && { rounds: [] }) // 회식/모임 유형일 때만 rounds 추가
+    categories: finalCategories,
+    ...(type === 'gathering' && { rounds: [] })
   };
 
   db.projects.push(newProject);
   writeDb(db);
   res.status(201).jsonp(newProject);
 });
+
+// ... (이하 다른 라우트 코드는 모두 동일합니다) ...
 
 server.get('/projects', (req, res) => {
   const db = readDb();
@@ -136,9 +165,14 @@ server.delete('/categories/:id', (req, res) => {
     const project = db.projects.find(p => p.id === parseInt(projectId));
 
     if (project) {
+        const categoryToDelete = project.categories.find(c => c.id === categoryId);
+        if (categoryToDelete && categoryToDelete.isDeletable === false) {
+            return res.status(400).jsonp({ error: `'${categoryToDelete.name}' 카테고리는 삭제할 수 없습니다.` });
+        }
+        
         const isCategoryInUse = project.expenses?.some(e => e.category_id === categoryId);
         if (isCategoryInUse) {
-            return res.status(400).jsonp({ error: "Cannot delete category: it is currently in use by an expense." });
+            return res.status(400).jsonp({ error: "해당 카테고리를 사용하고 있는 지출 내역이 있어 삭제할 수 없습니다." });
         }
         const categoryIndex = project.categories.findIndex(c => c.id === categoryId);
         if (categoryIndex > -1) {
@@ -378,7 +412,9 @@ server.get('/projects/:projectId/settlement', (req, res) => {
         const { amount, payer_id, split_method = 'equally', split_details = {}, penny_rounding_target_id, split_participants, eventDate, round } = expense;
         
         let involvedParticipantIds;
-        if (split_participants && split_participants.length > 0) {
+        if (split_method === 'amount' || split_method === 'percentage') {
+            involvedParticipantIds = Object.keys(split_details).map(Number);
+        } else if (split_participants && split_participants.length > 0) {
             involvedParticipantIds = split_participants;
         } 
         else if (project.type === 'travel' && eventDate) {
@@ -492,26 +528,20 @@ server.delete('/participants/:id', (req, res) => {
     if (participantIndex > -1) {
       participantFound = true;
       
-      // 1. 해당 참여자가 '결제자'인 지출 내역을 삭제
       project.expenses = project.expenses?.filter(e => e.payer_id !== participantId) || [];
 
-      // 2. 남은 지출 내역들을 순회하며 해당 참여자 정보 정리
       project.expenses?.forEach(expense => {
-        // 2-1. '균등 분배'의 분담 목록에서 제거
         if (expense.split_participants?.includes(participantId)) {
           expense.split_participants = expense.split_participants.filter(id => id !== participantId);
         }
-        // 2-2. '금액/비율 지정'의 상세 정보에서 제거
         if (expense.split_details && expense.split_details[participantId] !== undefined) {
           delete expense.split_details[participantId];
-          // ✨ 중요: 상세 분배 정보가 변경되었으므로, 데이터 정합성을 위해 균등 분배로 초기화
           expense.split_method = 'equally'; 
           expense.split_participants = Object.keys(expense.split_details).map(Number);
           expense.locked_participant_ids = [];
         }
       });
 
-      // 3. 참여자 목록에서 최종적으로 삭제
       project.participants.splice(participantIndex, 1);
     }
   });

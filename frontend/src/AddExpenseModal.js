@@ -7,7 +7,6 @@ const formatNumber = (num) => { if (num === null || num === undefined || isNaN(n
 const unformatNumber = (str) => { if (typeof str !== 'string' || str.trim() === '') return 0; return Number(str.replace(/,/g, '')); };
 
 function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
-  // ✨ [오류 수정] project 데이터가 없으면 렌더링하지 않음
   if (!project) return null;
 
   const [desc, setDesc] = useState('');
@@ -17,6 +16,9 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [round, setRound] = useState(1);
+  const [lodgingStartDate, setLodgingStartDate] = useState('');
+  const [lodgingEndDate, setLodgingEndDate] = useState('');
+  const [isLodgingAutoCalcEnabled, setIsLodgingAutoCalcEnabled] = useState(true);
 
   const [validationError, setValidationError] = useState('');
   const [pennyRoundingTargetId, setPennyRoundingTargetId] = useState('');
@@ -30,6 +32,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
   const categories = project?.categories || [];
+  const isLodgingCategory = project.type === 'travel' && categories.find(c => c.id === Number(selectedCategory))?.name === '숙박';
 
   const handleToggleSection = (sectionName) => {
     setOpenSection(prevSection => (prevSection === sectionName ? null : sectionName));
@@ -105,12 +108,14 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
 
   useEffect(() => {
     if (isOpen) {
-      if (categories.length > 0) {
-        setSelectedCategory(categories[0].id);
-      }
+      const initialCategoryId = categories.length > 0 ? categories[0].id : '';
+      setSelectedCategory(initialCategoryId);
       setDesc(''); setAmount('0'); setPayerId(''); setSplitMethod('equally');
       setEventDate(project?.startDate || '');
-      setRound(1);
+      setRound(project.rounds?.[0] || 1);
+      setLodgingStartDate('');
+      setLodgingEndDate('');
+      setIsLodgingAutoCalcEnabled(true);
       setSplitDetails({}); setSplitDetailStrings({}); setValidationError('');
       setLockedParticipants(new Set());
       setPennyRoundingTargetId('');
@@ -120,33 +125,81 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
       }
     }
   }, [isOpen, project, categories]);
+  
+  useEffect(() => {
+    if (project.type === 'travel') {
+      const isLodging = categories.find(c => c.id === Number(selectedCategory))?.name === '숙박';
+      
+      if (isLodging) {
+        setSplitMethod('amount');
+      } else {
+        if (splitMethod === 'amount') {
+          setSplitMethod('equally');
+        }
+      }
+    }
+  }, [selectedCategory, categories, project.type, splitMethod]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isLodgingCategory) return;
 
     if (project.type === 'travel') {
-      if (!eventDate) {
-        setSplitParticipantIds(new Set());
-        return;
-      }
-      const attendingParticipantIds = participants
-        .filter(p => p.attendance?.includes(eventDate))
-        .map(p => p.id);
+      if (!eventDate) { setSplitParticipantIds(new Set()); return; }
+      const attendingParticipantIds = participants.filter(p => p.attendance?.includes(eventDate)).map(p => p.id);
       setSplitParticipantIds(new Set(attendingParticipantIds));
     } else if (project.type === 'gathering') {
       const roundNum = Number(round);
-      if (!roundNum || roundNum < 1) {
-        setSplitParticipantIds(new Set());
-        return;
-      }
-      const attendingParticipantIds = participants
-        .filter(p => p.attendance?.includes(roundNum))
-        .map(p => p.id);
+      if (!roundNum || roundNum < 1) { setSplitParticipantIds(new Set()); return; }
+      const attendingParticipantIds = participants.filter(p => p.attendance?.includes(roundNum)).map(p => p.id);
       setSplitParticipantIds(new Set(attendingParticipantIds));
     } else {
         setSplitParticipantIds(new Set(participants.map(p => p.id)));
     }
-  }, [isOpen, eventDate, round, project.type, participants]);
+  }, [isOpen, eventDate, round, project.type, participants, isLodgingCategory]);
+
+  useEffect(() => {
+    if (isOpen && isLodgingCategory && isLodgingAutoCalcEnabled && lodgingStartDate && lodgingEndDate && unformatNumber(amount) > 0) {
+      const lodgingStart = new Date(lodgingStartDate);
+      const lodgingEnd = new Date(lodgingEndDate);
+      let totalNights = 0;
+      const participantNights = {};
+
+      participants.forEach(p => {
+        let nights = 0;
+        const attendance = p.attendance || [];
+        for (let d = new Date(lodgingStart); d < lodgingEnd; d.setDate(d.getDate() + 1)) {
+          if (attendance.includes(d.toISOString().split('T')[0])) {
+            nights++;
+          }
+        }
+        participantNights[p.id] = nights;
+        totalNights += nights;
+      });
+
+      if (totalNights > 0) {
+        const costPerNight = unformatNumber(amount) / totalNights;
+        const newDetails = {};
+        const newStrings = {};
+        let calculatedTotal = 0;
+
+        participants.forEach((p, index) => {
+          if (index < participants.length - 1) {
+            const share = Math.round(participantNights[p.id] * costPerNight);
+            newDetails[p.id] = share;
+            newStrings[p.id] = formatNumber(share);
+            calculatedTotal += share;
+          } else {
+            const finalShare = unformatNumber(amount) - calculatedTotal;
+            newDetails[p.id] = finalShare;
+            newStrings[p.id] = formatNumber(finalShare);
+          }
+        });
+
+        setSplitDetails(newDetails);
+        setSplitDetailStrings(newStrings);
+      }
+    }
+  }, [isOpen, isLodgingCategory, isLodgingAutoCalcEnabled, lodgingStartDate, lodgingEndDate, amount, participants]);
 
   const handleSplitMethodChange = (method) => {
     setSplitMethod(method);
@@ -155,12 +208,15 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
   }
 
   useEffect(() => {
+    if (isLodgingCategory) return;
+
     if (isOpen && (splitMethod === 'amount' || splitMethod === 'percentage')) {
         setDefaultSplits(splitMethod);
     }
-  }, [amount, isOpen, splitMethod, setDefaultSplits]);
+  }, [amount, isOpen, splitMethod, setDefaultSplits, isLodgingCategory]);
 
   const handleSplitDetailChange = (participantId, value) => {
+    setIsLodgingAutoCalcEnabled(false);
     const cleanedValue = value.replace(/[^0-9.]/g, '');
     let newDetails = { ...splitDetails };
     let newStrings = { ...splitDetailStrings, [participantId]: cleanedValue };
@@ -199,12 +255,22 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
     const totalAmount = unformatNumber(amount);
     if (!desc.trim() || !totalAmount || !payerId) { setValidationError('모든 항목(내용, 금액, 결제자)을 입력해주세요.'); return; }
     if (project.type === 'travel' && !eventDate) { setValidationError('지출이 발생한 날짜를 선택해주세요.'); return; }
+    if (isLodgingCategory && (!lodgingStartDate || !lodgingEndDate)) {
+      setValidationError('숙박 기간(체크인/체크아웃)을 모두 입력해주세요.');
+      return;
+    }
     if (project.type === 'gathering' && (!round || round < 1)) { setValidationError('회차를 1 이상의 숫자로 입력해주세요.'); return; }
 
     if (splitMethod === 'equally' && splitParticipantIds.size === 0) { setValidationError('비용을 분담할 참여자를 한 명 이상 선택해주세요.'); return; }
     if (splitMethod === 'amount') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(splitSum - totalAmount) > 0.01) { setValidationError(`금액의 합계(${formatNumber(Math.round(splitSum))}원)가 총 지출액(${formatNumber(totalAmount)}원)과 일치하지 않습니다.`); return; }
     } else if (splitMethod === 'percentage') { const splitSum = Object.values(splitDetails).reduce((sum, val) => sum + Number(val || 0), 0); if (Math.abs(100 - splitSum) > 0.1) { setValidationError(`비율의 합계(${splitSum.toFixed(1)}%)가 100%가 되어야 합니다.`); return; } }
     
+    let finalLockedIds = Array.from(lockedParticipants);
+    if (splitMethod === 'amount' || splitMethod === 'percentage') {
+      const participantIdsInSplit = Object.keys(splitDetails).map(Number);
+      finalLockedIds = Array.from(new Set([...finalLockedIds, ...participantIdsInSplit]));
+    }
+
     const expenseData = {
       desc,
       amount: totalAmount,
@@ -212,11 +278,13 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
       split_method: splitMethod,
       split_details: splitDetails,
       category_id: Number(selectedCategory),
-      locked_participant_ids: Array.from(lockedParticipants),
+      locked_participant_ids: finalLockedIds,
       split_participants: splitMethod === 'equally' ? Array.from(splitParticipantIds) : [],
       penny_rounding_target_id: pennyRoundingTargetId ? Number(pennyRoundingTargetId) : null,
       eventDate: project.type === 'travel' ? eventDate : null,
       round: project.type === 'gathering' ? Number(round) : null,
+      lodgingStartDate: isLodgingCategory ? lodgingStartDate : null,
+      lodgingEndDate: isLodgingCategory ? lodgingEndDate : null,
     };
 
     fetch(`${apiBaseUrl}/projects/${project.id}/expenses`, {
@@ -283,11 +351,26 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         <div className="form-item-half form-group">
           <label htmlFor="round-add">회차</label>
           <select id="round-add" value={round} onChange={e => setRound(Number(e.target.value))}>
-            {/* ✨ 프로젝트에 저장된 회차와, 지출 내역에만 있는 회차를 모두 합쳐서 보여줌 */}
             {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
               <option key={r} value={r}>{r}차</option>
             ))}
           </select>
+        </div>
+      )}
+      
+      {isLodgingCategory && (
+        <div className="form-item-full lodging-period-selector">
+          <div className="date-range-form">
+            <div className="date-input-group">
+              <label>체크인</label>
+              <input type="date" value={lodgingStartDate} onChange={e => setLodgingStartDate(e.target.value)} min={project.startDate} max={project.endDate}/>
+            </div>
+            <span className="tilde">~</span>
+            <div className="date-input-group">
+              <label>체크아웃</label>
+              <input type="date" value={lodgingEndDate} onChange={e => setLodgingEndDate(e.target.value)} min={project.startDate} max={project.endDate}/>
+            </div>
+          </div>
         </div>
       )}
       
@@ -308,6 +391,9 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         <div className="form-item-full">
           <div className="split-details-section">
             <div className="split-participants-header"><h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4><button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>전체보기</button></div>
+            <p className="split-detail-notice">
+              ⓘ 저장 시 모든 참여자의 분담액이 자동으로 잠깁니다. 특정 참여자의 값만 바꾸려면, 다른 참여자를 먼저 잠가주세요.
+            </p>
             <div className="split-detail-list">{participants.map(p => (<div key={p.id} className="split-detail-row"><label htmlFor={`split-detail-add-${p.id}`}>{p.name}</label><div className="input-with-unit"><input id={`split-detail-add-${p.id}`} type="text" value={splitDetailStrings[p.id] || ''} onChange={e => handleSplitDetailChange(p.id, e.target.value)} onBlur={() => handleSplitDetailBlur(p.id)} placeholder="0" inputMode="numeric" disabled={lockedParticipants.has(p.id)} /><span>{splitMethod === 'amount' ? '원' : '%'}</span></div><button type="button" className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`} onClick={() => toggleLock(p.id)} title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}><LockIcon isLocked={lockedParticipants.has(p.id)} /></button></div>))}</div>
           </div>
           {renderSplitError()}
@@ -343,11 +429,25 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
           <div className="form-item-half form-group">
             <label htmlFor="round-add-mobile">회차</label>
             <select id="round-add-mobile" value={round} onChange={e => setRound(Number(e.target.value))}>
-              {/* ✨ 프로젝트에 저장된 회차와, 지출 내역에만 있는 회차를 모두 합쳐서 보여줌 */}
               {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
                 <option key={r} value={r}>{r}차</option>
               ))}
             </select>
+          </div>
+        )}
+        {isLodgingCategory && (
+          <div className="form-item-full lodging-period-selector">
+            <div className="date-range-form">
+              <div className="date-input-group">
+                <label>체크인</label>
+                <input type="date" value={lodgingStartDate} onChange={e => setLodgingStartDate(e.target.value)} min={project.startDate} max={project.endDate}/>
+              </div>
+              <span className="tilde">~</span>
+              <div className="date-input-group">
+                <label>체크아웃</label>
+                <input type="date" value={lodgingEndDate} onChange={e => setLodgingEndDate(e.target.value)} min={project.startDate} max={project.endDate}/>
+              </div>
+            </div>
           </div>
         )}
       </AccordionSection>
@@ -364,6 +464,9 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
           <div className="form-item-full">
             <div className="split-details-section">
               <div className="split-participants-header"><h4>{splitMethod === 'amount' ? '분담할 금액' : '분담할 비율'}</h4><button type="button" className="select-all-button" onClick={() => setIsFullSplitViewOpen(true)}>전체보기</button></div>
+              <p className="split-detail-notice">
+                ⓘ 저장 시 모든 참여자의 분담액이 자동으로 잠깁니다. 특정 참여자의 값만 바꾸려면, 다른 참여자를 먼저 잠가주세요.
+              </p>
               <div className="split-detail-list">{participants.map(p => (<div key={p.id} className="split-detail-row"><label htmlFor={`split-detail-add-${p.id}`}>{p.name}</label><div className="input-with-unit"><input id={`split-detail-add-${p.id}`} type="text" value={splitDetailStrings[p.id] || ''} onChange={e => handleSplitDetailChange(p.id, e.target.value)} onBlur={() => handleSplitDetailBlur(p.id)} placeholder="0" inputMode="numeric" disabled={lockedParticipants.has(p.id)} /><span>{splitMethod === 'amount' ? '원' : '%'}</span></div><button type="button" className={`lock-button ${lockedParticipants.has(p.id) ? 'locked' : ''}`} onClick={() => toggleLock(p.id)} title={lockedParticipants.has(p.id) ? '금액 잠금 해제' : '금액 잠금'}><LockIcon isLocked={lockedParticipants.has(p.id)} /></button></div>))}</div>
             </div>
           </div>
