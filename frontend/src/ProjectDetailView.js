@@ -21,10 +21,12 @@ const InfoIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="n
 const SettingsIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> );
 const MoreIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg> );
 
-const groupAndSortExpenses = (expenses, projectType, projectStartDate) => {
+const groupAndSortExpenses = (expenses, projectType, projectStartDate, projectRounds) => {
   if (projectType === 'general' || !projectType) {
     return { '전체': expenses };
   }
+  
+  const roundNameMap = new Map((projectRounds || []).map(r => [r.number, r.name]));
 
   const grouped = expenses.reduce((acc, expense) => {
     let key = '미분류';
@@ -39,7 +41,13 @@ const groupAndSortExpenses = (expenses, projectType, projectStartDate) => {
         key = '날짜 미지정';
       }
     } else if (projectType === 'gathering') {
-      key = expense.round ? `${expense.round}차` : '회차 미지정';
+      const roundNum = expense.round;
+      if (roundNum) {
+        const roundName = roundNameMap.get(roundNum);
+        key = roundName ? `${roundNum}차: ${roundName}` : `${roundNum}차`;
+      } else {
+        key = '회차 미지정';
+      }
     }
 
     if (!acc[key]) {
@@ -50,6 +58,9 @@ const groupAndSortExpenses = (expenses, projectType, projectStartDate) => {
   }, {});
   
   const sortedKeys = Object.keys(grouped).sort((a, b) => {
+    if (a === '미분류' || a === '날짜 미지정' || a === '회차 미지정') return 1;
+    if (b === '미분류' || b === '날짜 미지정' || b === '회차 미지정') return -1;
+    
     if (projectType === 'travel') {
       const dayA = parseInt(a.split('일차')[0]);
       const dayB = parseInt(b.split('일차')[0]);
@@ -72,11 +83,10 @@ const groupAndSortExpenses = (expenses, projectType, projectStartDate) => {
 function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, isParticipantsExpanded, onToggleParticipants }) {
 
   const [disableTransition, setDisableTransition] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // ✨ [추가] 더보기 메뉴 상태
-  const menuRef = useRef(null); // ✨ [추가] 메뉴 참조
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
-    // ✨ [추가] 메뉴 외부 클릭 시 닫기
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
@@ -115,7 +125,7 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
   const perPersonAmount = project.participants.length > 0 ? Math.round(totalAmount / project.participants.length) : 0;
   const participants = [...(project.participants || [])].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
   
-  const groupedExpenses = groupAndSortExpenses(project.expenses || [], project.type, project.startDate);
+  const groupedExpenses = groupAndSortExpenses(project.expenses || [], project.type, project.startDate, project.rounds);
 
   const renderExpenseGroups = () => {
     return Object.entries(groupedExpenses).map(([groupTitle, expensesInGroup]) => {
@@ -182,7 +192,6 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
   return (
     <div className="detail-container">
       <header className="detail-header">
-        {/* ✨ [핵심 수정] 헤더 구조 변경 */}
         <div className="detail-title-group">
           <h2 className="detail-title" title={project.name}>{project.name}</h2>
           {project.type && <span className="project-type-badge">{projectTypeMap[project.type]}</span>}

@@ -29,6 +29,9 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
   const [isFullSplitViewOpen, setIsFullSplitViewOpen] = useState(false);
   const [openSection, setOpenSection] = useState('basic');
 
+  const allRoundNumbers = [...new Set([...(project.rounds?.map(r => r.number) || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b);
+  const roundNameMap = new Map((project.rounds || []).map(r => [r.number, r.name]));
+
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   const participants = project?.participants || [];
   const categories = project?.categories || [];
@@ -324,9 +327,11 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
             <div className="form-item-half form-group">
               <label htmlFor="round-edit">회차</label>
               <select id="round-edit" value={round} onChange={e => setRound(Number(e.target.value))}>
-                {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
-                  <option key={r} value={r}>{r}차</option>
-                ))}
+                {allRoundNumbers.map(rNum => {
+                  const name = roundNameMap.get(rNum);
+                  const displayName = name ? `${rNum}차: ${name}` : `${rNum}차`;
+                  return <option key={rNum} value={rNum}>{displayName}</option>
+                })}
               </select>
             </div>
           )}
@@ -393,9 +398,11 @@ function EditExpenseModal({ isOpen, onClose, project, expense, onSave, apiBaseUr
                 <div className="form-item-half form-group">
                   <label htmlFor="round-edit-mobile">회차</label>
                   <select id="round-edit-mobile" value={round} onChange={e => setRound(Number(e.target.value))}>
-                    {[...new Set([...(project.rounds || []), ...(project.expenses?.map(e => e.round).filter(Boolean) || [])])].sort((a,b)=>a-b).map(r => (
-                      <option key={r} value={r}>{r}차</option>
-                    ))}
+                    {allRoundNumbers.map(rNum => {
+                      const name = roundNameMap.get(rNum);
+                      const displayName = name ? `${rNum}차: ${name}` : `${rNum}차`;
+                      return <option key={rNum} value={rNum}>{displayName}</option>
+                    })}
                   </select>
                 </div>
               )}

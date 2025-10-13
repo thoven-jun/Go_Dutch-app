@@ -153,9 +153,18 @@ function GeneralSettingsPanel({ project, apiBaseUrl, onUpdate, showAlert }) {
         setEndDate(project.endDate || '');
       } else if (project.type === 'gathering') {
         const roundsFromProject = project.rounds || [];
-        const roundsFromExpenses = project.expenses?.map(e => e.round).filter(Boolean) || [];
-        const allRounds = [...new Set([...roundsFromProject, ...roundsFromExpenses])].sort((a,b)=> a-b);
-        setRounds(allRounds);
+        const expenseRoundNumbers = new Set(project.expenses?.map(e => e.round).filter(Boolean) || []);
+        const projectRoundNumbers = new Set(roundsFromProject.map(r => r.number));
+        
+        const combinedRounds = [...roundsFromProject];
+        expenseRoundNumbers.forEach(rNum => {
+          if (!projectRoundNumbers.has(rNum)) {
+            combinedRounds.push({ number: rNum, name: '' });
+          }
+        });
+        
+        combinedRounds.sort((a, b) => a.number - b.number);
+        setRounds(combinedRounds);
       }
     }
   }, [project]);
@@ -171,33 +180,35 @@ function GeneralSettingsPanel({ project, apiBaseUrl, onUpdate, showAlert }) {
       body: JSON.stringify({ startDate, endDate })
     })
     .then(async res => {
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error);
-      }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
       return res.json();
     })
-    .then(() => {
-      onUpdate();
-      showAlert('성공', '여행 기간이 성공적으로 수정되었습니다.');
-    })
+    .then(() => { onUpdate(); showAlert('성공', '여행 기간이 성공적으로 수정되었습니다.'); })
     .catch(err => showAlert('수정 실패', err.message));
   };
 
+  const handleRoundNameChange = (roundNumber, newName) => {
+    setRounds(currentRounds => 
+      currentRounds.map(r => 
+        r.number === roundNumber ? { ...r, name: newName } : r
+      )
+    );
+  };
+
   const handleAddNextRound = () => {
-    const nextRound = rounds.length > 0 ? Math.max(...rounds) + 1 : 1;
-    setRounds([...rounds, nextRound]);
+    const nextRoundNumber = rounds.length > 0 ? Math.max(...rounds.map(r => r.number)) + 1 : 1;
+    setRounds([...rounds, { number: nextRoundNumber, name: '' }]);
   };
 
   const handleRemoveLastRound = () => {
     if (rounds.length === 0) return;
-    const lastRound = Math.max(...rounds);
-    const isUsed = project.expenses?.some(e => e.round === lastRound);
+    const lastRound = rounds.reduce((max, r) => r.number > max.number ? r : max, rounds[0]);
+    const isUsed = project.expenses?.some(e => e.round === lastRound.number);
     if (isUsed) {
-      showAlert('삭제 불가', `${lastRound}차는 지출 내역에서 사용 중이므로 삭제할 수 없습니다.`);
+      showAlert('삭제 불가', `${lastRound.number}차는 지출 내역에서 사용 중이므로 삭제할 수 없습니다.`);
       return;
     }
-    setRounds(rounds.filter(r => r !== lastRound));
+    setRounds(rounds.filter(r => r.number !== lastRound.number));
   };
 
   const handleRoundsSave = () => {
@@ -207,16 +218,10 @@ function GeneralSettingsPanel({ project, apiBaseUrl, onUpdate, showAlert }) {
       body: JSON.stringify({ rounds })
     })
     .then(async res => {
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error);
-      }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
       return res.json();
     })
-    .then(() => {
-      onUpdate();
-      showAlert('성공', '회차 목록이 성공적으로 저장되었습니다.');
-    })
+    .then(() => { onUpdate(); showAlert('성공', '회차 목록이 성공적으로 저장되었습니다.'); })
     .catch(err => showAlert('저장 실패', err.message));
   };
   
@@ -243,12 +248,19 @@ function GeneralSettingsPanel({ project, apiBaseUrl, onUpdate, showAlert }) {
       {project.type === 'gathering' && (
         <div className="manager-section">
           <h3>회차 관리</h3>
-          <p className="section-description">회차를 추가하거나 삭제할 수 있습니다. 지출 내역이 있는 회차는 삭제할 수 없습니다.</p>
+          <p className="section-description">회차를 추가하거나 이름을 지정할 수 있습니다. 지출 내역이 있는 회차는 삭제할 수 없습니다.</p>
           <div className="scrollable-list round-management-list">
             <ul>
               {rounds.map(r => (
-                <li key={r}>
-                  <span className="round-name">{r}차</span>
+                <li key={r.number}>
+                  <span className="round-number-label">{r.number}차</span>
+                  <input 
+                    type="text" 
+                    className="round-name-input"
+                    value={r.name}
+                    onChange={(e) => handleRoundNameChange(r.number, e.target.value)}
+                    placeholder="회차 이름 (예: 1차 장소)"
+                  />
                 </li>
               ))}
               {rounds.length === 0 && <li style={{justifyContent: 'center', color: 'var(--text-secondary)'}}>회차 정보가 없습니다.</li>}

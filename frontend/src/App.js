@@ -156,6 +156,7 @@ function AppContent() {
             type: projectData.type,
             startDate: projectData.startDate,
             endDate: projectData.endDate,
+            rounds: projectData.rounds, // 회차 정보 추가
             participants: [],
             expenses: []
         })

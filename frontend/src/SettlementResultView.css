@@ -1,4 +1,3 @@
-
 .settlement-container { max-width: 700px; margin: 40px auto; padding: 30px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
 .settlement-title { text-align: center; color: var(--text-primary); margin: 0px 0px 30px 0px; }
 .summary-card { background-color: var(--bg-color); border-left: 5px solid var(--primary-color); padding: 10px 20px 10px 20px; margin-bottom: 25px; border-radius: 5px; }
@@ -9,10 +8,36 @@
 .view-mode-toggle { display: flex; justify-content: center; margin-bottom: 24px; background-color: var(--bg-secondary-color); border-radius: 8px; padding: 5px; }
 .view-mode-toggle button { flex: 1; padding: 10px 15px; border: none; border-radius: 6px; background-color: transparent; color: var(--text-secondary); font-size: 1em; font-weight: 500; cursor: pointer; transition: all 0.2s ease-in-out; }
 .view-mode-toggle button.active { background-color: #ffffff; color: var(--primary-color); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-.transfer-section h2 { color: var(--text-secondary); font-size: 1.2em; margin-top: 30px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+
+.sub-view-mode-toggle {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+.sub-view-mode-toggle button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.9em;
+  padding: 6px 12px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sub-view-mode-toggle button:hover {
+  background-color: var(--bg-color);
+}
+.sub-view-mode-toggle button.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  font-weight: 500;
+}
+
+.transfer-section h2 { color: var(--text-secondary); font-size: 1.2em; margin-top: 0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
 .no-transfer-message { color: var(--text-secondary); text-align: center; padding: 20px 0; }
 
-/* --- '내 관점 필터링' UI 스타일 --- */
 .perspective-filter { display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-color); border-radius: 8px; padding: 8px; margin-bottom: 24px; border: 1px solid var(--border-color); }
 .participant-select-wrapper { flex-grow: 1; min-width: 0; }
 .participant-select-wrapper select { width: 100%; padding: 8px 12px; font-size: 0.9em; font-weight: 500; border: none; background-color: transparent; -webkit-appearance: none; -moz-appearance: none; appearance: none; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -20,7 +45,6 @@
 .filter-buttons button { padding: 8px 10px; border: none; background-color: transparent; color: var(--text-secondary); border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-size: 0.85em; white-space: nowrap; }
 .filter-buttons button.active { background-color: white; color: var(--primary-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-/* --- ✨ '전체 내역' 분리형 목록 스타일 --- */
 .transfer-list { list-style: none; padding: 0; }
 .transfer-list-item { display: flex; align-items: center; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--border-color); }
 .transfer-list-item:last-child { border-bottom: none; }
@@ -33,7 +57,6 @@
 .transfer-list-item .arrow { color: #999; }
 .transfer-list-item .amount { margin-left: auto; font-weight: bold; font-size: 1.1em; color: var(--primary-color); white-space: nowrap; }
 
-/* --- '보낼 돈/받을 돈' 그룹 리스트 스타일 --- */
 .grouped-list { background-color: var(--bg-color); border-radius: 12px; padding: 16px; }
 .grouped-list .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 275px;}
 .grouped-list-title { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 5px 0; font-size: 1.1em; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
@@ -44,6 +67,132 @@
 .grouped-list .arrow { font-size: 1.2em; color: #999; margin-right: 12px; }
 .grouped-list .participant-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .grouped-list .amount { margin-left: auto; font-weight: 500; font-size: 1.1em; }
+
+.receipt-placeholder {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 40px 20px;
+  background-color: var(--bg-color);
+  border-radius: 8px;
+}
+
+.receipt-card {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.receipt-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.receipt-header h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.2em;
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background-color: var(--bg-color);
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.receipt-total span {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.receipt-total strong {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.receipt-expense-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.receipt-category-group {
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.receipt-category-group:last-child {
+  border-bottom: none;
+}
+
+.receipt-category-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background-color: var(--bg-color);
+  font-weight: 500;
+}
+
+.receipt-category-icon {
+  font-size: 1.1em;
+}
+
+.receipt-category-name {
+  flex-grow: 1;
+}
+
+.receipt-category-total {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.receipt-category-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.receipt-category-group li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px 14px 48px;
+  border-bottom: 1px solid var(--border-color);
+}
+.receipt-category-group li:last-child {
+  border-bottom: none;
+}
+
+.receipt-expense-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.receipt-expense-desc {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.receipt-expense-payer {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.receipt-expense-share {
+  font-weight: 500;
+  font-size: 1.1em;
+  white-space: nowrap;
+  margin-left: 16px;
+}
 
 @media (max-width: 768px) {
   .settlement-container { margin: 0; padding: 20px; box-shadow: none; border-radius: 0; }

@@ -22,7 +22,9 @@ const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null,
 
 server.post('/projects', (req, res) => {
   const db = readDb();
-  const { name, type = 'general', startDate = null, endDate = null } = req.body;
+  // ▼▼▼▼▼ [수정] req.body에서 rounds를 추출하도록 수정 ▼▼▼▼▼
+  const { name, type = 'general', startDate = null, endDate = null, rounds = [] } = req.body;
+  // ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲
 
   const allIds = [
     ...db.projects.map(p => p.id),
@@ -74,7 +76,7 @@ server.post('/projects', (req, res) => {
     expenses: [],
     createdDate: new Date().toISOString(),
     categories: finalCategories,
-    ...(type === 'gathering' && { rounds: [] })
+    ...(type === 'gathering' && { rounds: rounds })
   };
 
   db.projects.push(newProject);
@@ -286,18 +288,18 @@ server.patch('/projects/:projectId/rounds', (req, res) => {
     const project = db.projects.find(p => p.id === parseInt(projectId));
 
     if (project) {
-        const oldRounds = new Set(project.rounds || []);
-        const newRounds = new Set(rounds || []);
+        const oldRoundNumbers = new Set((project.rounds || []).map(r => r.number));
+        const newRoundNumbers = new Set((rounds || []).map(r => r.number));
         
-        const deletedRounds = [...oldRounds].filter(r => !newRounds.has(r));
+        const deletedRoundNumbers = [...oldRoundNumbers].filter(rNum => !newRoundNumbers.has(rNum));
         
-        const expensesInDeletedRounds = project.expenses.filter(e => deletedRounds.includes(e.round));
+        const expensesInDeletedRounds = project.expenses.filter(e => deletedRoundNumbers.includes(e.round));
         if (expensesInDeletedRounds.length > 0) {
             const usedRounds = [...new Set(expensesInDeletedRounds.map(e => e.round))];
             return res.status(400).jsonp({ error: `${usedRounds.join(', ')}차는 지출 내역에서 사용 중이므로 삭제할 수 없습니다.` });
         }
 
-        project.rounds = rounds.sort((a,b) => a-b);
+        project.rounds = rounds.sort((a,b) => a.number - b.number);
         writeDb(db);
         res.status(200).jsonp(project);
     } else {
@@ -515,6 +517,102 @@ server.get('/projects/:projectId/settlement', (req, res) => {
         netTransfers,
         grossTransfers
     });
+});
+
+server.get('/projects/:projectId/receipt', (req, res) => {
+    const { projectId } = req.params;
+    const db = readDb();
+    const project = db.projects.find(p => p.id === parseInt(projectId));
+
+    if (!project) {
+        return res.status(404).jsonp({ error: 'Project not found' });
+    }
+
+    const participants = project.participants || [];
+    const expenses = project.expenses || [];
+    const categories = project.categories || [];
+    const participantMap = new Map(participants.map(p => [p.id, p.name]));
+    const categoryMap = new Map(categories.map(c => [c.id, c]));
+
+    if (participants.length === 0) {
+        return res.json([]);
+    }
+
+    const receipts = participants.map(participant => {
+        let totalSpent = 0;
+        const spentByCategoryMap = new Map();
+
+        expenses.forEach(expense => {
+            const { id: expenseId, desc, amount, category_id, payer_id, split_method = 'equally', split_details = {}, split_participants, eventDate, round } = expense;
+
+            let involvedParticipantIds;
+            if (split_method === 'amount' || split_method === 'percentage') {
+                involvedParticipantIds = Object.keys(split_details).map(Number);
+            } else if (split_participants && split_participants.length > 0) {
+                involvedParticipantIds = split_participants;
+            } else if (project.type === 'travel' && eventDate) {
+                involvedParticipantIds = participants.filter(p => p.attendance?.includes(eventDate)).map(p => p.id);
+            } else if (project.type === 'gathering' && round) {
+                involvedParticipantIds = participants.filter(p => p.attendance?.includes(round)).map(p => p.id);
+            } else {
+                involvedParticipantIds = participants.map(p => p.id);
+            }
+            
+            if (involvedParticipantIds.includes(participant.id)) {
+                let yourShare = 0;
+                const involvedCount = involvedParticipantIds.length;
+
+                if (involvedCount > 0) {
+                    if (split_method === 'equally') {
+                        yourShare = amount / involvedCount;
+                    } else if (split_method === 'amount') {
+                        yourShare = Number(split_details[participant.id] || 0);
+                    } else if (split_method === 'percentage') {
+                        const percentage = Number(split_details[participant.id] || 0);
+                        yourShare = amount * (percentage / 100);
+                    }
+                }
+                
+                yourShare = Math.round(yourShare);
+
+                if (yourShare > 0) {
+                    totalSpent += yourShare;
+                    const category = categoryMap.get(category_id) || { id: 0, name: '미분류', emoji: '⚪️' };
+                    
+                    if (!spentByCategoryMap.has(category.id)) {
+                        spentByCategoryMap.set(category.id, {
+                            categoryId: category.id,
+                            categoryName: category.name,
+                            categoryEmoji: category.emoji,
+                            totalAmount: 0,
+                            expenseDetails: []
+                        });
+                    }
+                    
+                    const categoryGroup = spentByCategoryMap.get(category.id);
+                    categoryGroup.totalAmount += yourShare;
+                    categoryGroup.expenseDetails.push({
+                        expenseId: expenseId,
+                        expenseDesc: desc,
+                        yourShare: yourShare,
+                        totalExpenseAmount: amount,
+                        payerName: participantMap.get(payer_id) || 'N/A'
+                    });
+                }
+            }
+        });
+
+        const spentByCategory = Array.from(spentByCategoryMap.values());
+
+        return {
+            participantId: participant.id,
+            participantName: participant.name,
+            totalSpent: Math.round(totalSpent),
+            spentByCategory: spentByCategory
+        };
+    });
+
+    res.json(receipts);
 });
 
 server.delete('/participants/:id', (req, res) => {
