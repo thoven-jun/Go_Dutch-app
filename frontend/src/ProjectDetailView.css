@@ -17,6 +17,14 @@
   padding: 20px 40px; /* 패딩 조정 */
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0; /* 헤더는 줄어들지 않음 */
+  gap: 12px;
+}
+.detail-title-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-grow: 1;
 }
 .detail-title {
   margin: 0;
@@ -34,7 +42,7 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 10px;
-  margin-bottom: 10px;
+
 }
 
 .detail-title, .section-header h2 {
@@ -69,7 +77,7 @@
   overflow-y: hidden; /* ✨ content-body 전체의 스크롤은 막습니다. */
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 24px;
   min-height: 0; /* ✨ flex-grow가 제대로 작동하기 위해 필요 */
 }
 .detail-section {
@@ -776,6 +784,49 @@
   background-color: #f1f3f5;
 }
 
+/* --- 👇 [신설] 프로젝트 정보 카드 스타일 --- */
+.project-info-card {
+  display: flex;
+  justify-content: space-around; /* 항목 그룹들을 균등한 간격으로 배치 */
+  align-items: center;
+  flex-wrap: wrap; /* 창이 매우 좁아질 경우를 대비해 줄바꿈 허용 */
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.info-item {
+  display: flex;
+  /* 👇 [핵심] space-between 대신 gap을 사용하여 라벨과 값을 항상 붙여줍니다. */
+  gap: 12px;
+  align-items: baseline;
+  font-size: 0.9em;
+}
+.info-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap; /* '참여자' 같은 라벨이 줄바꿈되지 않도록 설정 */
+}
+.info-value {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.info-value-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.manage-icon-button {
+  display: flex; align-items: center; justify-content: center;
+  padding: 2px; border-radius: 50%; color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.manage-icon-button:hover { background-color: var(--bg-secondary-color); color: var(--text-primary); }
+
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
   .detail-container {
@@ -822,5 +873,48 @@
   }
   .header-actions .more-menu-button {
     display: flex; /* '더보기' 버튼은 항상 보이도록 설정 */
+  }
+  .project-info-card {
+    display: flex;
+    align-items: stretch; /* 항목들의 높이를 동일하게 맞춤 */
+    padding: 12px 0;
+  }
+
+  .info-item {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .project-info-card.project-type-general .info-item,
+  .project-info-card.project-type-gathering .info-item {
+      flex: 1; /* 일반, 회식/모임은 1:1 또는 1:1:1 비율 */
+  }
+
+  .project-info-card.project-type-travel .info-item:nth-child(1),
+  .project-info-card.project-type-travel .info-item:nth-child(3) {
+      flex: 0.8; /* 여행 유형의 양쪽 끝은 0.8 비율 */
+  }
+  .project-info-card.project-type-travel .info-item:nth-child(2) {
+      flex: 1.4; /* 여행 유형의 가운데(기간)는 1.4 비율 */
+  }
+
+  /* 구분선 추가 */
+  .info-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%;
+    border-right: 1px solid var(--border-color);
+  }
+  .info-label {
+    font-size: 0.8em;
   }
 }

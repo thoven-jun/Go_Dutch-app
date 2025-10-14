@@ -13,6 +13,14 @@ const projectTypeMap = {
   gathering: '회식/모임'
 };
 
+const formatShortDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' })
+    .replace(/\s/g, '') // 공백 제거
+    .slice(0, -1); // 마지막 '.' 제거
+};
+
 const DeleteIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> );
 const ChevronIcon = ({ isExpanded }) => ( <svg className={`chevron-icon ${isExpanded ? 'expanded' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> );
 const ManageIcon = () => ( <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H4"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg> );
@@ -80,9 +88,8 @@ const groupAndSortExpenses = (expenses, projectType, projectStartDate, projectRo
   return sortedGrouped;
 };
 
-function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, isParticipantsExpanded, onToggleParticipants }) {
+function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl }) {
 
-  const [disableTransition, setDisableTransition] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -96,11 +103,6 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    setDisableTransition(true);
-    const timer = setTimeout(() => setDisableTransition(false), 50);
-    return () => clearTimeout(timer);
-  }, [project.id]);
 
   const handleDeleteExpense = (expenseId) => {
     showAlert('지출 내역 삭제', '정말 이 지출 내역을 삭제하시겠습니까?', () => {
@@ -194,10 +196,6 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
       <header className="detail-header">
         <div className="detail-title-group">
           <h2 className="detail-title" title={project.name}>{project.name}</h2>
-          {project.type && <span className="project-type-badge">{projectTypeMap[project.type]}</span>}
-        </div>
-        
-        <div className="header-actions">
           <div className="more-menu-container" ref={menuRef}>
             <button className="more-menu-button" title="더보기" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               <MoreIcon />
@@ -213,6 +211,9 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
               </div>
             )}
           </div>
+        </div>
+        
+        <div className="header-actions">
           <Link to={`/project/${project.id}/settlement`} className="settle-button">
             정산하기
           </Link>
@@ -220,24 +221,31 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
       </header>
       
       <div className="content-body">
-        <div className="detail-section participant-section">
-          <button 
-            className="section-header collapsible" 
-            onClick={onToggleParticipants}
-          >
-            <div className="section-title-group">
-              <h2>참여자 ({participants.length}명)</h2>
-              <Link to={`/project/${project.id}/settings#participants`} className="manage-icon-button" onClick={e => e.stopPropagation()}>
+        <div className={`project-info-card project-type-${project.type}`}>
+          <div className="info-item">
+            <span className="info-label">유형</span>
+            <span className="info-value">{projectTypeMap[project.type] || '일반'}</span>
+          </div>
+          {project.type === 'travel' && (
+            <div className="info-item">
+              <span className="info-label">기간</span>
+              <span className="info-value">{formatShortDate(project.startDate)} ~ {formatShortDate(project.endDate)}</span>
+            </div>
+          )}
+          {project.type === 'gathering' && (
+            <div className="info-item">
+              <span className="info-label">회차</span>
+              <span className="info-value">총 {project.rounds?.length || 0}차</span>
+            </div>
+          )}
+          <div className="info-item">
+            <span className="info-label">참여자</span>
+            <div className="info-value-group">
+              <span className="info-value">{participants.length}명</span>
+              <Link to={`/project/${project.id}/settings#participants`} className="manage-icon-button" title="참여자 관리">
                 <ManageIcon />
               </Link>
             </div>
-            <ChevronIcon isExpanded={isParticipantsExpanded} />
-          </button>
-          
-          <div className={`participant-list-container ${isParticipantsExpanded ? 'expanded' : ''} ${disableTransition ? 'no-transition' : ''}`}>
-            <ul className="item-list participant-list-items">
-              {participants.map((p) => <li key={p.id}>{p.name}</li>)}
-            </ul>
           </div>
         </div>
 
