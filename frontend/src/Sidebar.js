@@ -13,6 +13,11 @@ const SidebarToggleIcon = ({ isCollapsed }) => ( <svg xmlns="http://www.w3.org/2
 const CloseIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> );
 const ArchiveIcon = () => ( <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg> );
 
+const projectTypeMap = {
+  travel: '여행',
+  gathering: '회식/모임'
+};
+
 function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobileSidebar, isMenuOpen, setOpenMenuId, isSelectionMode, selectedProjects, onProjectSelect }) {
   const menuRef = useRef(null);
   const [menuStyle, setMenuStyle] = useState({});
@@ -56,6 +61,9 @@ function ProjectItem({ project, onOpenRenameModal, onDeleteProject, onCloseMobil
       
       <NavLink to={`/project/${project.id}`} onClick={handleItemClick}>
         <span className="project-name-text">{project.name}</span>
+        {project.type && project.type !== 'general' && (
+          <span className="project-type-badge-sidebar">{projectTypeMap[project.type]}</span>
+        )}
       </NavLink>
 
       {!isSelectionMode && (
