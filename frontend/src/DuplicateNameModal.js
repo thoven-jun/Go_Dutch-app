@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './DuplicateNameModal.css';
 
 function DuplicateNameModal({ isOpen, onClose, onSave, duplicates, newName, editingParticipantId }) {
   const [names, setNames] = useState({});

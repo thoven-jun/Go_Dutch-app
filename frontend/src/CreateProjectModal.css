@@ -1,0 +1,217 @@
+/* src/CreateProjectModal.css */
+
+.create-project-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.create-project-modal .modal-body {
+  flex-grow: 1;
+  overflow-y: visible;
+  padding: 4px;
+  margin-right: -4px;
+}
+.create-project-modal h2,
+.create-project-modal .modal-footer {
+  flex-shrink: 0;
+}
+.create-project-modal .modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+.create-project-modal .modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.create-project-modal .modal-body::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.create-project-modal .form-group {
+  margin-bottom: 20px;
+}
+.create-project-modal .form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+.create-project-modal input {
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.create-project-modal .participant-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.create-project-modal .remove-participant-btn {
+  border: none;
+  background: none;
+  font-size: 1.5em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 8px;
+}
+.create-project-modal .add-participant-btn {
+  border: none;
+  background: none;
+  font-size: 0.9em;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 4px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+.create-project-modal .participant-input-row input.input-error {
+  border-color: #e53e3e;
+  background-color: #fff5f5;
+}
+.create-project-modal .participant-input-row input.input-error:focus {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.2);
+}
+.create-project-modal .participant-list-container {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  background-color: var(--bg-color);
+}
+.create-project-modal .participant-list-container .participant-input-row {
+  margin-bottom: 10px;
+}
+.create-project-modal .participant-list-container .participant-input-row:last-child {
+  margin-bottom: 0;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.create-project-modal .participant-list-container::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+.create-project-modal .form-label-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.create-project-modal .form-label-header label {
+  margin-bottom: 0;
+}
+.create-project-modal .view-all-button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.create-project-modal .add-participant-btn {
+  margin-top: 8px;
+}
+.create-project-modal .form-group.participant-form-group {
+  margin-bottom: 12px;
+}
+.create-project-modal .project-type-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.create-project-modal .project-type-button {
+  padding: 12px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: white;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+.create-project-modal .project-type-button:hover {
+  background-color: var(--bg-color);
+}
+.create-project-modal .project-type-button.active {
+  background-color: var(--accent-color-light);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+.create-project-modal .date-range-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.create-project-modal .date-range-picker .date-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.create-project-modal .date-range-picker label {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+.create-project-modal .date-range-picker input[type="date"] {
+  height: 40px;
+  padding: 8px;
+}
+.create-project-modal .date-range-picker .tilde {
+  margin-top: 18px;
+  color: var(--text-secondary);
+}
+.create-project-modal .round-setup-list {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  background-color: var(--bg-color);
+}
+.create-project-modal .round-setup-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.create-project-modal .round-setup-row:last-child {
+  margin-bottom: 0;
+}
+.create-project-modal .round-setup-row .round-number-label {
+  font-weight: 500;
+  width: 40px;
+  flex-shrink: 0;
+}
+.create-project-modal .round-setup-row input {
+  flex-grow: 1;
+}
+.create-project-modal .round-setup-list::-webkit-scrollbar {
+  width: 8px;
+}
+.create-project-modal .round-setup-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.create-project-modal .round-setup-list::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.create-project-modal .round-setup-list::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}

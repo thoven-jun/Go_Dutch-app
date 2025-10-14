@@ -1,6 +1,7 @@
 // src/RenameModal.js
 
 import React, { useState, useEffect } from 'react';
+import './RenameModal.css';
 
 function RenameModal({ isOpen, onClose, onRename, currentName }) {
   const [name, setName] = useState(currentName);

@@ -1,0 +1,105 @@
+/* src/FullSplitViewModal.css */
+
+.full-split-view-overlay {
+  z-index: 1001;
+}
+.full-split-view-modal {
+  max-width: 550px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.full-split-view-modal h2 {
+  flex-shrink: 0;
+}
+.full-split-view-modal .full-split-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-right: -10px;
+}
+.full-split-view-modal .split-detail-row label {
+  flex-basis: 150px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.full-split-view-modal .full-split-list::-webkit-scrollbar {
+  width: 8px;
+}
+.full-split-view-modal .full-split-list::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 4px;
+}
+.full-split-view-modal .full-split-list::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.full-split-view-modal .full-split-list::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+.participant-full-view .modal-footer {
+  justify-content: space-between;
+}
+.participant-full-view .draggable-item {
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.participant-full-view .draggable-item span {
+  color: var(--text-secondary);
+}
+.participant-full-view .draggable-item input {
+  flex-grow: 1;
+}
+.participant-full-view .participant-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.participant-full-view .draggable-item {
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+.participant-full-view .draggable-item:hover {
+  background-color: var(--bg-color);
+}
+.participant-full-view .draggable-item span {
+  cursor: grab;
+  color: var(--text-secondary);
+}
+.participant-full-view .participant-input-row input {
+  flex-grow: 1;
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.participant-full-view .remove-participant-btn {
+  border: none;
+  background: none;
+  font-size: 1.5em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 8px;
+}
+.participant-full-view .modal-footer {
+  justify-content: space-between;
+}
+.participant-full-view .add-participant-btn {
+  border: none;
+  background: none;
+  font-size: 0.9em;
+  color: var(--primary-color);
+  cursor: pointer;
+  padding: 4px;
+  font-weight: 500;
+}

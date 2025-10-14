@@ -1,5 +1,5 @@
 import React from 'react';
-// import './CustomAlertModal.css'; // <-- 이 줄을 삭제해주세요.
+import './CustomAlertModal.css';
 
 function CustomAlertModal({ isOpen, onClose, title, message, onConfirm }) {
   if (!isOpen) {

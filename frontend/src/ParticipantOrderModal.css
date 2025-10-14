@@ -1,0 +1,50 @@
+/* src/ParticipantOrderModal.css */
+
+.participant-order-modal p {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+.participant-order-modal .order-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.participant-order-modal .order-list li {
+  padding: 12px 16px;
+  background-color: white;
+  border-bottom: 1px solid var(--border-color);
+  cursor: grab;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+.participant-order-modal .order-list li:last-child {
+  border-bottom: none;
+}
+.participant-order-modal .order-list li:hover {
+  background-color: var(--bg-color);
+}
+.participant-order-modal .order-list li span {
+  margin-right: 12px;
+  color: var(--text-secondary);
+  display: inline-block;
+  width: 20px;
+}
+.participant-order-modal .order-list::-webkit-scrollbar {
+  width: 8px;
+}
+.participant-order-modal .order-list::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+.participant-order-modal .order-list::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 4px;
+}
+.participant-order-modal .order-list::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}

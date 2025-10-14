@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './ParticipantOrderModal.css';
 
 function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl }) {
   const [participants, setParticipants] = useState([]);

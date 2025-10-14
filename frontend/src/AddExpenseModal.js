@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import FullSplitViewModal from './FullSplitViewModal';
 import AccordionSection from './AccordionSection';
+import './AddExpenseModal.css';
 
 const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24 24" fill={isLocked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{isLocked ? <path d="M19 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4" /> : <path d="M5 11H3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2m-4-4a5 5 0 0 0-10 0v4h10V7z" />}</svg> );
 const formatNumber = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
@@ -141,7 +142,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
         }
       }
     }
-  }, [selectedCategory, categories, project.type, splitMethod]);
+  }, [selectedCategory, categories, project.type]);
 
   useEffect(() => {
     if (!isOpen || isLodgingCategory) return;

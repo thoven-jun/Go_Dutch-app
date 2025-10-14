@@ -1,0 +1,16 @@
+/* src/CustomAlertModal.css */
+
+.alert-modal {
+  max-width: 380px;
+  z-index: 2000;
+}
+.alert-modal h2 {
+    margin-top: 0;
+    margin-bottom: 24px;
+}
+.alert-modal p {
+  margin: 0 0 24px 0;
+  font-size: 0.95em;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
