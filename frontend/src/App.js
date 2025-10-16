@@ -1,6 +1,6 @@
 //* src/App.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Link, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Welcome from './Welcome';
@@ -20,8 +20,10 @@ import DestructiveActionModal from './DestructiveActionModal';
 import SelectiveImportModal from './SelectiveImportModal';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import './App.css';
 import './Modals.css';
+import './Header.css';
 
 const MenuIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg> );
 
@@ -93,7 +95,7 @@ function MainLayout({ onLogout }) {
   const [renameModalInfo, setRenameModalInfo] = useState({ isOpen: false, projectId: null, currentName: '' });
   const [duplicateModalInfo, setDuplicateModalInfo] = useState({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
   const [alertInfo, setAlertInfo] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
-  const [destructiveModalInfo, setDestructiveModalInfo] = useState({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null });
+  const [destructiveModalInfo, setDestructiveModalInfo] = useState({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null, requiresPassword: false, errorMessage: '' });
   const [addExpenseModalInfo, setAddExpenseModalInfo] = useState({ isOpen: false, project: null });
   const [editExpenseModalInfo, setEditExpenseModalInfo] = useState({ isOpen: false, project: null, expense: null });
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
@@ -106,6 +108,10 @@ function MainLayout({ onLogout }) {
   const navigate = useNavigate();
 
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+
+  const [userInfo, setUserInfo] = useState(null); // 사용자 정보 state
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // 드롭다운 메뉴 state
+  const menuRef = useRef(null); // 드롭다운 외부 클릭 감지를 위한 ref
   
   const authorizedFetch = useCallback((url, options = {}) => {
     const token = localStorage.getItem('accessToken');
@@ -122,16 +128,50 @@ function MainLayout({ onLogout }) {
     });
   }, [onLogout]);
 
+  const updateUserInfo = useCallback(() => {
+    authorizedFetch(`${apiBaseUrl}/auth/me`)
+      .then(res => res.json())
+      .then(data => setUserInfo(data))
+      .catch(error => console.error("Error fetching user info:", error));
+  }, [apiBaseUrl, authorizedFetch]);
+
+  const fetchProjectsAndUser = useCallback(() => {
+    authorizedFetch(`${apiBaseUrl}/projects`)
+      .then(res => res.json())
+      .then(data => setProjects(data || []))
+      .catch(error => console.error("Error fetching projects:", error));
+
+    authorizedFetch(`${apiBaseUrl}/auth/me`)
+      .then(res => res.json())
+      .then(data => setUserInfo(data))
+      .catch(error => console.error("Error fetching user info:", error));
+  }, [apiBaseUrl, authorizedFetch]);
+
+  useEffect(() => {
+    fetchProjectsAndUser();
+  }, [fetchProjectsAndUser]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fetchProjects = useCallback(() => {
     authorizedFetch(`${apiBaseUrl}/projects`)
       .then(res => res.json())
       .then(data => setProjects(data || []))
       .catch(error => console.error("Error fetching projects:", error));
   }, [apiBaseUrl, authorizedFetch]);
-
+  
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+    updateUserInfo(); // 페이지 로드 시 프로젝트와 사용자 정보를 각각 불러옴
+  }, [fetchProjects, updateUserInfo]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -159,11 +199,12 @@ function MainLayout({ onLogout }) {
     setAlertInfo({ isOpen: false, title: '', message: '', onConfirm: null });
   };
 
-  const openDestructiveModal = ({ title, mainContent, consequences, confirmText, onConfirm }) => {
-    setDestructiveModalInfo({ isOpen: true, title, mainContent, consequences, confirmText, onConfirm });
+  const openDestructiveModal = ({ title, mainContent, consequences, confirmText, onConfirm, requiresPassword = false, errorMessage = '' }) => {
+    setDestructiveModalInfo({ isOpen: true, title, mainContent, consequences, confirmText, onConfirm, requiresPassword, errorMessage });
   };
+  
   const closeDestructiveModal = () => {
-    setDestructiveModalInfo({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null });
+    setDestructiveModalInfo({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null, requiresPassword: false, errorMessage: '' });
   };
 
   const openImportModal = (projectsFromFile) => {
@@ -376,12 +417,32 @@ function MainLayout({ onLogout }) {
 
         <main className="main-content">
           <header className="main-header">
-            <button className="hamburger-menu" onClick={() => setIsMobileSidebarOpen(true)}>
-              <MenuIcon />
-            </button>
-            <Link to="/" className="main-logo-link">
-                <h1>Go Dutch</h1>
-            </Link>
+            <div className="header-left">
+              <button className="hamburger-menu" onClick={() => setIsMobileSidebarOpen(true)}>
+                <MenuIcon />
+              </button>
+              <Link to="/" className="main-logo-link">
+                  <h1>Go Dutch</h1>
+              </Link>
+            </div>
+            <div className="header-right" ref={menuRef}>
+              {userInfo && (
+                <button className="account-thumbnail" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                  {userInfo.name.charAt(0)}
+                </button>
+              )}
+              {isMenuOpen && (
+                <div className="header-dropdown-menu">
+                  <div className="user-info">
+                    <strong>{userInfo.name}</strong>
+                    <span>{userInfo.email}</span>
+                  </div>
+                  <hr/>
+                  <Link to="/settings" onClick={() => setIsMenuOpen(false)}>계정 관리</Link>
+                  <button onClick={() => { onLogout(); setIsMenuOpen(false); }}>로그아웃</button>
+                </div>
+              )}
+            </div>
           </header>
           <div className="content-area">
               <Routes>
@@ -437,6 +498,8 @@ function MainLayout({ onLogout }) {
                                 closeDestructiveModal={closeDestructiveModal}
                                 openImportModal={openImportModal}
                                 authorizedFetch={authorizedFetch}
+                                onUserUpdate={updateUserInfo}
+                                onLogout={onLogout} // onLogout prop 전달
                              />} 
                   />
                   <Route
@@ -530,6 +593,8 @@ function MainLayout({ onLogout }) {
         mainContent={destructiveModalInfo.mainContent}
         consequences={destructiveModalInfo.consequences}
         confirmText={destructiveModalInfo.confirmText}
+        requiresPassword={destructiveModalInfo.requiresPassword}
+        errorMessage={destructiveModalInfo.errorMessage}
       />
     </>
   );
@@ -552,7 +617,8 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login apiBaseUrl={apiBaseUrl} onLoginSuccess={handleLoginSuccess} />} />
-      <Route path="/register" element={<Register apiBaseUrl={apiBaseUrl} onLoginSuccess={handleLoginSuccess} />} />
+      <Route path="/register" element={<Register apiBaseUrl={apiBaseUrl} />} />
+      <Route path="/verify-email" element={<VerifyEmail apiBaseUrl={apiBaseUrl} onLoginSuccess={handleLoginSuccess} />} />
       <Route path="/*" element={
         <ProtectedRoute isLoggedIn={isLoggedIn}>
           <MainLayout onLogout={handleLogout} />

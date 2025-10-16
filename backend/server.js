@@ -1,15 +1,31 @@
-// 제미나이용 백엔드/server.js
+// backend/server.js
 
 const jsonServer = require('json-server');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+const axios = require('axios'); 
+const nodemailer = require('nodemailer'); // ▼▼▼ [추가] nodemailer 불러오기 ▼▼▼
+const crypto = require('crypto'); // ▼▼▼ [추가] crypto 불러오기 (토큰 생성용) ▼▼▼
 require('dotenv').config();
+
 const server = jsonServer.create();
 const middlewares = jsonServer.defaults();
 const fs = require('fs');
 
-const SECRET_KEY = process.env.JWT_SECRET; // 실제 서비스에서는 더 복잡한 키를 사용해야 합니다.
+const SECRET_KEY = process.env.JWT_SECRET;
+const RECAPTCHA_SECRET = process.env.RECAPTCHA_SECRET_KEY;
 const expiresIn = '1h';
+
+// --- ▼▼▼ [추가] 이메일 설정 ▼▼▼ ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // 사용하는 이메일 서비스 (예: 'naver')
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+// --- ▲▲▲ [추가] 완료 ▲▲▲ ---
 
 const dbTemplatePath = 'db.template.json';
 const dbPath = 'db.json';
@@ -26,33 +42,148 @@ server.use(jsonServer.bodyParser);
 const readDb = () => JSON.parse(fs.readFileSync('db.json', 'UTF-8'));
 const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
 
+// --- ▼▼▼ [추가] 회원가입 요청 횟수 제한 설정 ▼▼▼ ---
+const registerLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15분
+	max: 5, // 15분 동안 5번만 요청 가능
+	message: '너무 많은 회원가입 시도가 있었습니다. 15분 후에 다시 시도해주세요.',
+  standardHeaders: true, 
+	legacyHeaders: false,
+});
+
 // --- 인증 관련 함수 ---
 const createToken = (payload) => jwt.sign(payload, SECRET_KEY, { expiresIn });
 const verifyToken = (token) => jwt.verify(token, SECRET_KEY, (err, decode) => decode !== undefined ? decode : null);
 const isAuthenticated = ({ email, password }) => {
   const db = readDb();
-  const user = db.users.find(u => u.email === email);
+  const user = db.users.find(u => u.email === email && u.isVerified);
   if (!user) return false;
   return bcrypt.compareSync(password, user.password);
 };
 
 // --- ▼▼▼ 회원가입 API (/auth/register) ▼▼▼ ---
-server.post('/auth/register', (req, res) => {
-  const { email, password, name } = req.body;
-  const db = readDb();
+// --- ▼▼▼ [수정] 회원가입 API 로직 전체 변경 ▼▼▼ ---
+server.post('/auth/register', registerLimiter, async (req, res) => {
+  const { email, password, name, recaptchaToken } = req.body;
 
+  if (!recaptchaToken) return res.status(400).json({ message: 'reCAPTCHA 인증이 필요합니다.' });
+
+  try {
+    const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET}&response=${recaptchaToken}`);
+    if (!response.data.success) return res.status(400).json({ message: 'reCAPTCHA 인증에 실패했습니다.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'reCAPTCHA 서버와 통신 중 오류가 발생했습니다.' });
+  }
+  
+  const db = readDb();
+  const existingUser = db.users.find(u => u.email === email);
+
+  if (existingUser && existingUser.isVerified) {
+    return res.status(400).json({ message: '이미 사용 중인 이메일입니다.' });
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  
+  if (existingUser && !existingUser.isVerified) {
+    // 인증되지 않은 기존 사용자가 있다면, 정보 업데이트 후 이메일 재전송
+    existingUser.password = hashedPassword;
+    existingUser.name = name;
+    existingUser.verificationToken = verificationToken;
+  } else {
+    // 신규 사용자
+    const maxId = Math.max(0, ...db.users.map(u => u.id));
+    const newUser = {
+      id: maxId + 1,
+      email,
+      password: hashedPassword,
+      name,
+      isVerified: false, // 이메일 인증 여부 플래그
+      verificationToken,
+    };
+    db.users.push(newUser);
+  }
+
+  writeDb(db);
+
+  // 이메일 발송
+  const verificationUrl = `http://localhost:3000/verify-email?token=${verificationToken}`;
+  try {
+    // ▼▼▼▼▼ [수정] transporter.sendMail 부분을 아래 코드로 교체 ▼▼▼▼▼
+    await transporter.sendMail({
+      from: '"Go Dutch" <${process.env.EMAIL_USER}>', // 발신자 이름 설정
+      to: email,
+      subject: 'Go Dutch 회원가입 인증 메일입니다.',
+      html: `
+        <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+          <h1 style="color: #234066;">Go Dutch에 오신 것을 환영합니다!</h1>
+          <p style="color: #495057; margin-bottom: 30px;">아래 버튼을 클릭하여 회원가입을 완료해주세요.</p>
+          <div style="margin-bottom: 30px;">
+            <a href="${verificationUrl}" target="_blank" style="padding: 12px 24px; background-color: #234066; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">이메일 인증하기</a>
+          </div>
+          <p style="font-size: 0.8em; color: #868e96;">만약 위 버튼이 작동하지 않으면, 아래 링크를 브라우저에 복사하여 붙여넣어 주세요:</p>
+          <p style="font-size: 0.8em; color: #868e96; word-break: break-all;">${verificationUrl}</p>
+        </div>
+      `,
+    });
+    // ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲
+    res.status(201).json({ message: '회원가입 신청이 완료되었습니다. 이메일을 확인하여 인증을 완료해주세요.' });
+  } catch (error) {
+    console.error("Email sending error:", error);
+    res.status(500).json({ message: '인증 이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.' });
+  }
+});
+
+// --- ▼▼▼ [신설] 이메일 인증 확인 API ▼▼▼ ---
+server.post('/auth/verify-email', (req, res) => {
+  const { token } = req.body;
+  const db = readDb();
+  
+  const user = db.users.find(u => u.verificationToken === token);
+
+  if (!user) {
+    return res.status(400).json({ message: '유효하지 않은 인증 토큰입니다.' });
+  }
+
+  user.isVerified = true;
+  delete user.verificationToken; // 사용된 토큰은 삭제
+  writeDb(db);
+
+  // 인증 성공 후 바로 로그인 처리
+  const authToken = createToken({ email: user.email, userId: user.id });
+  res.status(200).json({ accessToken: authToken });
+});
+
+// --- ▼▼▼ [수정] 회원가입 API에 reCAPTCHA 검증 로직 추가 ▼▼▼ ---
+server.post('/auth/register', registerLimiter, async (req, res) => { // async 추가
+  const { email, password, name, recaptchaToken } = req.body;
+
+  // 1. reCAPTCHA 토큰 검증
+  if (!recaptchaToken) {
+    return res.status(400).json({ message: 'reCAPTCHA 인증이 필요합니다.' });
+  }
+
+  try {
+    const response = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET}&response=${recaptchaToken}`
+    );
+    if (!response.data.success) {
+      return res.status(400).json({ message: 'reCAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' });
+    }
+  } catch (error) {
+    console.error("reCAPTCHA verification error:", error);
+    return res.status(500).json({ message: 'reCAPTCHA 서버와 통신 중 오류가 발생했습니다.' });
+  }
+  
+  // 2. 기존 회원가입 로직 (검증 성공 시에만 실행)
+  const db = readDb();
   if (db.users.some(u => u.email === email)) {
     return res.status(400).json({ message: '이미 사용 중인 이메일입니다.' });
   }
 
   const hashedPassword = bcrypt.hashSync(password, 10);
   const maxId = Math.max(0, ...db.users.map(u => u.id));
-  const newUser = {
-    id: maxId + 1,
-    email,
-    password: hashedPassword,
-    name
-  };
+  const newUser = { id: maxId + 1, email, password: hashedPassword, name };
 
   db.users.push(newUser);
   writeDb(db);
@@ -74,10 +205,15 @@ server.post('/auth/login', (req, res) => {
 });
 
 // --- ▼▼▼ 모든 API에 인증 미들웨어 추가 ▼▼▼ ---
-server.use(/^(?!\/auth).*$/, (req, res, next) => {
+server.use((req, res, next) => {
+  if (req.path === '/auth/login' || req.path === '/auth/register') {
+    return next(); // 로그인과 회원가입은 통과
+  }
+
   if (req.headers.authorization === undefined || req.headers.authorization.split(' ')[0] !== 'Bearer') {
     return res.status(401).json({ message: '권한이 없습니다.' });
   }
+  
   try {
     const token = req.headers.authorization.split(' ')[1];
     const decodedToken = verifyToken(token);
@@ -182,6 +318,57 @@ server.post('/import/selective', (req, res) => {
 });
 
 // --- 사용자 정의 라우트 ---
+
+// ▼▼▼ [신설] 현재 로그인한 사용자 정보 조회 API (/auth/me) ▼▼▼
+server.get('/auth/me', (req, res) => {
+  const { userId } = req.user;
+  const db = readDb();
+  
+  const user = db.users.find(u => u.id === userId);
+  
+  if (user) {
+    // 비밀번호를 제외한 사용자 정보를 반환합니다.
+    res.status(200).jsonp({ id: user.id, name: user.name, email: user.email });
+  } else {
+    res.status(404).jsonp({ error: "User not found" });
+  }
+});
+
+// ▼▼▼ [신설] 사용자 프로필(이름) 수정 API ▼▼▼
+server.patch('/auth/profile', (req, res) => {
+  const { userId } = req.user;
+  const { name } = req.body;
+  const db = readDb();
+  
+  const user = db.users.find(u => u.id === userId);
+  
+  if (user) {
+    user.name = name;
+    writeDb(db);
+    res.status(200).jsonp({ id: user.id, name: user.name, email: user.email });
+  } else {
+    res.status(404).jsonp({ error: "User not found" });
+  }
+});
+
+// ▼▼▼ [신설] 비밀번호 변경 API ▼▼▼
+server.post('/auth/change-password', (req, res) => {
+  const { userId } = req.user;
+  const { currentPassword, newPassword } = req.body;
+  const db = readDb();
+  
+  const user = db.users.find(u => u.id === userId);
+
+  if (!user || !bcrypt.compareSync(currentPassword, user.password)) {
+    return res.status(400).jsonp({ message: '현재 비밀번호가 일치하지 않습니다.' });
+  }
+
+  user.password = bcrypt.hashSync(newPassword, 10);
+  writeDb(db);
+
+  res.status(200).jsonp({ message: '비밀번호가 성공적으로 변경되었습니다.' });
+});
+
 
 server.post('/projects', (req, res) => {
   const db = readDb();
@@ -804,6 +991,32 @@ server.post('/reset', (req, res) => {
   
   writeDb(db);
   res.status(200).jsonp({ message: 'Your data has been reset successfully' });
+});
+
+// ▼▼▼ [신설] 계정 삭제 API ▼▼▼
+server.post('/auth/delete-account', (req, res) => {
+  const { userId } = req.user;
+  const { password } = req.body;
+  const db = readDb();
+
+  const userIndex = db.users.findIndex(u => u.id === userId);
+  if (userIndex === -1) {
+    return res.status(404).jsonp({ message: "사용자를 찾을 수 없습니다." });
+  }
+
+  const user = db.users[userIndex];
+  // --- ▼▼▼ [수정] 상태 코드를 401에서 400으로 변경 ▼▼▼ ---
+  if (!bcrypt.compareSync(password, user.password)) {
+    return res.status(400).jsonp({ message: '비밀번호가 일치하지 않습니다.' });
+  }
+
+  // 사용자와 사용자의 모든 프로젝트 삭제
+  db.projects = db.projects.filter(p => p.userId !== userId);
+  db.users.splice(userIndex, 1);
+
+  writeDb(db);
+
+  res.status(200).jsonp({ message: '계정이 성공적으로 삭제되었습니다.' });
 });
 
 server.use(router);

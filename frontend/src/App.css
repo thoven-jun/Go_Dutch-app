@@ -17,13 +17,20 @@
 
 .main-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 24px 40px; /* ✨ 상하좌우 패딩을 동일하게 조정 */
+  padding: 0px 40px;
+  height: 72px;
   border-bottom: 1px solid var(--border-color); /* ✨ 헤더와 콘텐츠 영역 구분선 추가 */
   background-color: #f8f9fa; /* ✨ 배경색을 명확히 지정 */
   flex-shrink: 0;
   z-index: 10; /* ✨ 사이드바와의 레이어 관계를 위해 추가 */
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .main-header h1 {
@@ -86,10 +93,16 @@
   }
 
   .main-header {
-    padding: 16px 20px;
-    height: 72px;
-    box-sizing: border-box;
+    padding: 0px 20px;
     gap: 7px;
+  }
+  .main-header h1 {
+    font-size: 1.25em; /* 모바일에서 타이틀 폰트 크기 축소 */
+  }
+
+  /* 기존 .header-right 숨김 처리 제거 */
+  .header-right {
+    display: block; /* 숨김 처리를 해제하여 보이도록 변경 */
   }
   .content-area {
     padding: 20px;
@@ -101,4 +114,20 @@
     align-items: center;
     justify-content: center;
   }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px); /* 살짝 위에서 시작 */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-dropdown-menu {
+  /* ... (기존 스타일은 그대로 유지) ... */
+  animation: fadeInDown 0.2s ease-out; /* 애니메이션 적용 */
 }

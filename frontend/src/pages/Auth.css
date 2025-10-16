@@ -97,3 +97,52 @@
   font-size: 0.9em;
   text-align: center;
 }
+
+.recaptcha-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+/* --- ▼▼▼ [신설] 회원가입 성공 메시지 스타일 ▼▼▼ --- */
+.auth-success {
+  text-align: center;
+}
+.auth-success h2 {
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+.auth-success p {
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.auth-success .auth-button {
+  display: inline-block;
+  width: auto;
+  text-decoration: none;
+  padding: 10px 20px;
+}
+.auth-button:disabled {
+  background-color: var(--primary-color-light);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.password-group {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+}

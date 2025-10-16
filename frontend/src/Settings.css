@@ -49,7 +49,7 @@
 
 .settings-section h2 {
   font-size: 1.25em;
-  margin: 0 0 4px 0;
+  margin: 0 0 15px 0;
   color: var(--text-primary);
 }
 .settings-section .section-description {
@@ -130,6 +130,115 @@
   text-decoration: underline;
 }
 
+.account-setting-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-section-header h3 {
+  font-size: 1.1em;
+  margin: 0 0 12px 0;
+}
+.setting-section-header .section-description {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin: 0 0 12px 0;
+}
+
+.setting-section-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  background-color: transparent; /* 배경색 제거 */
+  padding: 0;
+  border: none; /* 테두리 제거 */
+  min-height: 44px; /* 버튼 높이와 맞춤 */
+}
+/* 폼이 아닐 때 표시되는 값 스타일 */
+.display-value {
+  font-size: 1em;
+  color: var(--text-secondary);
+}
+
+/* 수정 폼 레이아웃 */
+.edit-form-layout {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 비밀번호 변경 폼처럼 세로 정렬이 필요할 때 */
+.edit-form-layout.column {
+  flex-direction: column;
+  align-items: stretch;
+}
+.edit-form-layout.column .action-area {
+  align-self: flex-end; /* 버튼 그룹을 오른쪽으로 정렬 */
+}
+
+
+.edit-form-layout input {
+  flex-grow: 1;
+  padding: 10px;
+  font-size: 1em;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.edit-form-layout .action-area {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.form-fields {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-fields .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-fields label {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 24px 0;
+}
+/* 취소 버튼 스타일 추가 */
+.settings-button.cancel-button {
+  background-color: var(--bg-secondary-color);
+  border-color: var(--bg-secondary-color);
+  color: var(--text-secondary);
+}
+.settings-button.cancel-button:hover {
+  background-color: #d1d5db;
+  border-color: #d1d5db;
+}
+
+/* --- ▼▼▼ [신설] 계정 삭제 섹션 스타일 ▼▼▼ --- */
+.account-setting-section.destructive .setting-section-header h3 {
+  color: #c53030;
+}
+
+.account-setting-section.destructive .setting-section-content {
+  justify-content: flex-end; /* 버튼을 오른쪽 끝으로 정렬 */
+}
+
 @media (max-width: 768px) {
   .settings-page {
     height: auto;
@@ -177,5 +286,20 @@
     width: 100%;
     justify-content: center;
     padding: 10px;
+  }
+
+  .setting-section-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .edit-form-layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .edit-form-layout .action-area {
+    align-self: flex-end; /* 버튼 그룹 자체를 오른쪽으로 정렬 */
+    justify-content: flex-end; /* 내부 버튼들도 오른쪽으로 정렬 (일관성 유지) */
   }
 }
