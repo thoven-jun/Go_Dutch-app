@@ -91,18 +91,39 @@ const groupAndSortExpenses = (expenses, projectType, projectStartDate, projectRo
 function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl }) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState({});
   const menuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (isMenuOpen && !event.target.closest('.more-menu-container')) {
         setIsMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isMenuOpen]);
 
+  const toggleMenu = (e) => {
+    if (isMenuOpen) {
+      setIsMenuOpen(false);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 150; 
+    const margin = 16; // 화면 가장자리와의 최소 간격
+
+    let left = rect.right - menuWidth; // 기본적으로 메뉴 오른쪽 끝을 버튼 오른쪽 끝에 맞춤
+    const top = rect.bottom + 4;
+
+    // 만약 메뉴가 왼쪽 화면 밖으로 나간다면, 위치를 버튼의 왼쪽 끝에 맞춤 (오른쪽으로 펼쳐짐)
+    if (left < margin) {
+      left = rect.left;
+    }
+
+    setMenuStyle({ top: `${top}px`, left: `${left}px` });
+    setIsMenuOpen(true);
+  };
 
   const handleDeleteExpense = (expenseId) => {
     showAlert('지출 내역 삭제', '정말 이 지출 내역을 삭제하시겠습니까?', () => {
@@ -197,11 +218,11 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
         <div className="detail-title-group">
           <h2 className="detail-title" title={project.name}>{project.name}</h2>
           <div className="more-menu-container" ref={menuRef}>
-            <button className="more-menu-button" title="더보기" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <button className="more-menu-button" title="더보기" onClick={toggleMenu}>
               <MoreIcon />
             </button>
             {isMenuOpen && (
-              <div className="header-dropdown-menu">
+              <div className="header-dropdown-menu" style={menuStyle}>
                 <button onClick={() => { onOpenRenameModal(project.id, project.name); setIsMenuOpen(false); }}>
                   <EditIcon /> 이름 변경
                 </button>
@@ -259,9 +280,18 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
               지출 항목 추가
             </button>
           </div>
+          {/* --- ▼▼▼ [수정] 지출 내역 0건일 때 안내 메시지 표시 --- */}
           <div className="expense-list">
-            {renderExpenseGroups()}
+            {project.expenses.length === 0 ? (
+              <div className="empty-expense-list">
+                <p>아직 등록된 지출 내역이 없어요.</p>
+                <span>'지출 항목 추가'를 눌러 첫 지출을 기록해보세요!</span>
+              </div>
+            ) : (
+              renderExpenseGroups()
+            )}
           </div>
+          {/* --- ▲▲▲ [수정] 완료 --- */}
         </div>
       </div>
 

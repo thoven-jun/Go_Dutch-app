@@ -733,7 +733,7 @@
   position: relative;
 }
 .header-dropdown-menu {
-  position: absolute;
+  position: fixed;
   top: 100%;
   right: 0;
   margin-top: 8px;
@@ -741,7 +741,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 10;
+  z-index: 100;
   width: 150px;
   padding: 8px;
 }
@@ -826,6 +826,30 @@
   transition: all 0.2s;
 }
 .manage-icon-button:hover { background-color: var(--bg-secondary-color); color: var(--text-primary); }
+
+/* --- [신설] 지출 내역이 없을 때 표시될 UI --- */
+.empty-expense-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  background-color: var(--bg-color);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+}
+.empty-expense-list p {
+  font-size: 1.1em;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+.empty-expense-list span {
+  font-size: 0.9em;
+}
 
 /* --- ▼▼▼▼▼ 모바일 반응형 스타일 ▼▼▼▼▼ --- */
 @media (max-width: 768px) {
