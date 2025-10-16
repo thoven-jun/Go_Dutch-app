@@ -1,11 +1,61 @@
-.settlement-container { max-width: 700px; margin: 40px auto; padding: 30px; background-color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
-.settlement-title { text-align: center; color: var(--text-primary); margin: 0px 0px 30px 0px; }
-.summary-card { background-color: var(--bg-color); border-left: 5px solid var(--primary-color); padding: 10px 20px 10px 20px; margin-bottom: 25px; border-radius: 5px; }
-.summary-card div { display: flex; justify-content: space-between; font-size: 1.1em; padding: 5px 0; }
-.summary-card span { color: var(--text-secondary); }
-.back-link { display: inline-block; margin-bottom: 20px; color: var(--primary-color); text-decoration: none; font-weight: 500; }
+/* src/SettlementResultView.css */
+
+.settlement-container { max-width: 700px; margin: 24px auto 40px; padding: 24px 30px 40px; background-color: white; border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07); }
+.settlement-title { text-align: center; color: var(--text-primary); margin: 0 0 24px 0; }
+.back-link { display: inline-block; margin-bottom: 0; color: var(--primary-color); text-decoration: none; font-weight: 500; font-size: 0.9em; }
 .back-link:hover { text-decoration: underline; }
-.view-mode-toggle { display: flex; justify-content: center; margin-bottom: 24px; background-color: var(--bg-secondary-color); border-radius: 8px; padding: 5px; }
+
+/* --- 헤더 및 공유 버튼 --- */
+.settlement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.share-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-secondary-color);
+  color: var(--text-secondary);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.share-button:hover {
+  background-color: #d8dde2;
+}
+
+/* --- 요약 정보 카드 --- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+.summary-card {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.summary-card span {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+.summary-card strong {
+  font-size: 1.5em;
+  font-weight: 700;
+  text-align: right;
+}
+
+.view-mode-toggle { display: flex; justify-content: center; margin-bottom: 30px; background-color: var(--bg-secondary-color); border-radius: 8px; padding: 5px; }
 .view-mode-toggle button { flex: 1; padding: 10px 15px; border: none; border-radius: 6px; background-color: transparent; color: var(--text-secondary); font-size: 1em; font-weight: 500; cursor: pointer; transition: all 0.2s ease-in-out; }
 .view-mode-toggle button.active { background-color: #ffffff; color: var(--primary-color); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
 
@@ -44,6 +94,39 @@
 .filter-buttons { display: flex; flex-shrink: 0; border-left: 1px solid var(--border-color); margin-left: 8px; padding-left: 8px; }
 .filter-buttons button { padding: 8px 10px; border: none; background-color: transparent; color: var(--text-secondary); border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-size: 0.85em; white-space: nowrap; }
 .filter-buttons button.active { background-color: white; color: var(--primary-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+/* --- 참여자별 송금 요약 카드 --- */
+.transaction-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.transaction-card {
+  border-radius: 12px;
+  padding: 16px;
+}
+.transaction-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.transaction-card strong {
+  display: block;
+  text-align: right;
+  font-size: 1.8em;
+  font-weight: 700;
+}
+.transaction-card.to-receive {
+  background-color: #EBF2FF;
+  color: #367BF5;
+}
+.transaction-card.to-pay {
+  background-color: #FFF0F0;
+  color: #FF4D4D;
+}
 
 .transfer-list { list-style: none; padding: 0; }
 .transfer-list-item { display: flex; align-items: center; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--border-color); }
@@ -86,30 +169,50 @@
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-color);
 }
-
 .receipt-header h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   font-size: 1.2em;
 }
 
-.receipt-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+/* --- 개인별 내역 대시보드 --- */
+.receipt-dashboard {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   background-color: var(--bg-color);
-  padding: 12px 16px;
+  padding: 12px;
   border-radius: 8px;
 }
-
-.receipt-total span {
-  font-weight: 500;
+.dashboard-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+}
+.dashboard-item span {
+  font-size: 0.85em;
   color: var(--text-secondary);
 }
-
-.receipt-total strong {
-  font-size: 1.4em;
-  font-weight: 700;
-  color: var(--primary-color);
+.dashboard-item strong {
+  font-size: 1.2em;
+  font-weight: 600;
+}
+.dashboard-item.final-balance {
+  grid-column: 1 / -1;
+  background-color: white;
+  border-radius: 6px;
+}
+.final-balance strong.to-receive {
+  color: #367BF5;
+}
+.final-balance strong.to-pay {
+  color: #FF4D4D;
+}
+.expense-details-header {
+  margin: 24px 0 12px 0;
+  font-size: 1em;
+  color: var(--text-secondary);
+  padding: 0 20px;
 }
 
 .receipt-expense-list {
@@ -195,6 +298,14 @@
 }
 
 @media (max-width: 768px) {
-  .settlement-container { margin: 0; padding: 20px; box-shadow: none; border-radius: 0; }
+  .settlement-container { margin: 0; padding: 16px 20px 40px; box-shadow: none; border-radius: 0; }
   .grouped-list .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 125px;}
+  .settlement-header {
+    flex-direction: row; /* --- ▼▼▼ [수정] 아래 3줄 수정 및 추가 ▼▼▼ */
+    align-items: center;
+  }
+  .share-button {
+    width: auto;
+    align-self: center;
+  } /* --- ▲▲▲ [수정] 완료 ▲▲▲ --- */
 }

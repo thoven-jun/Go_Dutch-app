@@ -480,7 +480,7 @@ server.get('/projects/:projectId/settlement', (req, res) => {
     const participantNameMap = new Map(participants.map(p => [p.id, p.name]));
 
     if (participants.length === 0) {
-        return res.json({ totalAmount: 0, participantCount: 0, perPersonAmount: 0, netTransfers: [], grossTransfers: [] });
+        return res.json({ totalAmount: 0, participantCount: 0, perPersonAmount: 0, netTransfers: [], grossTransfers: [], balances: [] });
     }
 
     const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -566,10 +566,19 @@ server.get('/projects/:projectId/settlement', (req, res) => {
     participants.forEach(p => {
         totalPaidBy[p.id] = expenses.filter(e => e.payer_id === p.id).reduce((sum, e) => sum + e.amount, 0);
     });
-    const balances = {};
-    participants.forEach(p => { balances[p.name] = totalPaidBy[p.id] - totalOwedBy[p.id]; });
-    let creditors = Object.entries(balances).filter(([,b]) => b > 0).sort((a,b) => b[1] - a[1]);
-    let debtors = Object.entries(balances).filter(([,b]) => b < 0).sort((a,b) => a[1] - b[1]);
+
+    const balances_details = participants.map(p => ({
+      name: p.name,
+      totalPaid: totalPaidBy[p.id] || 0,
+      totalOwed: totalOwedBy[p.id] || 0,
+      balance: (totalPaidBy[p.id] || 0) - (totalOwedBy[p.id] || 0)
+    }));
+
+    const balancesForNetting = {};
+    participants.forEach(p => { balancesForNetting[p.name] = (totalPaidBy[p.id] || 0) - (totalOwedBy[p.id] || 0); });
+
+    let creditors = Object.entries(balancesForNetting).filter(([,b]) => b > 0).sort((a,b) => b[1] - a[1]);
+    let debtors = Object.entries(balancesForNetting).filter(([,b]) => b < 0).sort((a,b) => a[1] - b[1]);
     const netTransfers = [];
     while (creditors.length > 0 && debtors.length > 0) {
         let [creditorName, creditorAmount] = creditors[0];
@@ -594,7 +603,8 @@ server.get('/projects/:projectId/settlement', (req, res) => {
         participantCount: participants.length,
         perPersonAmount: participants.length > 0 ? Math.round(totalAmount / participants.length) : 0,
         netTransfers,
-        grossTransfers
+        grossTransfers,
+        balances: balances_details
     });
 });
 
