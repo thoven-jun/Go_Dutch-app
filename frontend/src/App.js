@@ -1,3 +1,5 @@
+// src/App.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
@@ -12,8 +14,10 @@ import EditExpenseModal from './EditExpenseModal';
 import CreateProjectModal from './CreateProjectModal';
 import ParticipantManager from './ParticipantManager';
 import ProjectSettings from './ProjectSettings';
+import Settings from './Settings';
 import ParticipantOrderModal from './ParticipantOrderModal';
 import DestructiveActionModal from './DestructiveActionModal';
+import SelectiveImportModal from './SelectiveImportModal';
 import './App.css';
 import './Modals.css';
 
@@ -82,6 +86,7 @@ function AppContent() {
   const [editExpenseModalInfo, setEditExpenseModalInfo] = useState({ isOpen: false, project: null, expense: null });
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [orderModalInfo, setOrderModalInfo] = useState({ isOpen: false, project: null });
+  const [importModalInfo, setImportModalInfo] = useState({ isOpen: false, projects: [] });
   const [participantListStates, setParticipantListStates] = useState({});
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -121,6 +126,14 @@ function AppContent() {
   };
   const closeDestructiveModal = () => {
     setDestructiveModalInfo({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null });
+  };
+// 👇 [추가] 선택적 가져오기 모달을 여는 함수
+  const openImportModal = (projectsFromFile) => {
+    setImportModalInfo({ isOpen: true, projects: projectsFromFile });
+  };
+  // 👇 [추가] 선택적 가져오기 모달을 닫는 함수
+  const closeImportModal = () => {
+    setImportModalInfo({ isOpen: false, projects: [] });
   };
 
   const openAddExpenseModal = (project) => {
@@ -408,6 +421,17 @@ function AppContent() {
                       closeDestructiveModal={closeDestructiveModal}
                     />}
                   />
+                  <Route 
+                    path="/settings" 
+                    element={<Settings 
+                                apiBaseUrl={apiBaseUrl} 
+                                showAlert={showAlert}
+                                onUpdate={fetchProjects}
+                                openDestructiveModal={openDestructiveModal}
+                                closeDestructiveModal={closeDestructiveModal}
+                                openImportModal={openImportModal}
+                             />} 
+                  />
                   <Route
                     path="/project/:projectId/settlement"
                     element={<SettlementResultView apiBaseUrl={apiBaseUrl} />}
@@ -465,6 +489,33 @@ function AppContent() {
         onSave={fetchProjects}
         apiBaseUrl={apiBaseUrl}
       />
+      {/* ▼▼▼▼▼ [수정] onConfirmImport 로직 수정 ▼▼▼▼▼ */}
+      <SelectiveImportModal 
+        isOpen={importModalInfo.isOpen}
+        onClose={closeImportModal}
+        projects={importModalInfo.projects}
+        onConfirmImport={(projectsToImport) => {
+          fetch(`${apiBaseUrl}/import/selective`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(projectsToImport)
+          })
+          .then(res => {
+            if (!res.ok) throw new Error('데이터 가져오기 실패');
+            return res.json();
+          })
+          .then(() => {
+            fetchProjects();
+            closeImportModal();
+            showAlert('가져오기 성공', '선택한 프로젝트를 성공적으로 가져왔습니다.');
+          })
+          .catch(err => {
+            console.error(err);
+            showAlert('오류', '데이터를 가져오는 중 오류가 발생했습니다.');
+          });
+        }}
+      />
+      {/* ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲ */}
       <DestructiveActionModal
         isOpen={destructiveModalInfo.isOpen}
         onClose={closeDestructiveModal}

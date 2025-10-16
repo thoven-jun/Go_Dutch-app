@@ -1,92 +1,178 @@
-/* src/Settings.css */
-
-.settings-container {
-  background-color: var(--bg-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
+.settings-page {
+  padding: 0;
   max-width: 800px;
-  margin: 40px auto;
-  color: var(--text-primary);
-  height: calc(100vh - 80px);
-  max-height: 850px;
+  min-width: 600px;
+  margin: 0 auto;
 }
-.settings-header { padding: 20px 40px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
-.settings-header h1 { margin: 0; font-size: 1.5em; }
+.settings-page .manager-header {
+  padding: 20px 30px;
+}
 
-/* ▼▼▼▼▼ [수정] 누락되었던 '.'을 추가합니다. ▼▼▼▼▼ */
-.settings-layout { display: flex; flex-grow: 1; min-height: 0; }
-/* ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲ */
-
-.settings-nav { flex-basis: 200px; flex-shrink: 0; padding: 20px; border-right: 1px solid var(--border-color); }
+.settings-layout {
+  display: flex;
+  flex-grow: 1;
+  min-height: 0;
+  padding: 10px 30px 40px 10px;
+}
+.settings-nav {
+  flex-basis: 180px;
+  flex-shrink: 0;
+}
 .settings-nav button {
-  width: 100%; display: block; padding: 12px 16px; background: none; border: none;
-  border-radius: 6px; text-align: left; font-size: 1em; font-weight: 500;
-  cursor: pointer; color: var(--text-secondary); transition: all 0.2s;
-}
-.settings-nav button:hover { background-color: var(--hover-bg); }
-.settings-nav button.active { background-color: var(--accent-color-light); color: var(--primary-color); font-weight: 600; }
-.settings-nav button:disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent; }
-
-.settings-panel { flex-grow: 1; padding: 30px 40px; overflow-y: auto; }
-.settings-section h2 { margin-top: 0; margin-bottom: 8px; }
-.section-description { margin-top: 0; margin-bottom: 24px; color: var(--text-secondary); font-size: 0.9em; }
-
-.theme-selector {
-  display: flex;
-  gap: 12px;
-  background-color: var(--bg-secondary-color);
-  border-radius: 8px;
-  padding: 8px;
-}
-.theme-option {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
+  text-align: left;
+  font-size: 0.95em;
   font-weight: 500;
-  transition: all 0.2s ease-in-out;
-  background-color: transparent;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background-color 0.2s, color 0.2s;
+}
+.settings-nav button:hover {
+  background-color: var(--bg-secondary-color);
+}
+.settings-nav button.active {
+  background-color: var(--accent-color-light);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+.settings-panel {
+  flex-grow: 1;
+  min-width: 0;
+  padding-left: 30px;
+}
+
+.settings-section h2 {
+  font-size: 1.25em;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+}
+.settings-section .section-description {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin: 0 0 16px 0;
+}
+.settings-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-color);
+  margin-bottom: 12px;
+}
+.settings-card .card-content {
+  flex-grow: 1;
+}
+.settings-card p {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  line-height: 1.5;
+}
+.settings-card .warning-text {
+  font-weight: 500;
+  color: #e53e3e;
+}
+.settings-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: white;
+  color: var(--text-primary);
+  font-size: 0.9em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.settings-button:hover {
+  background-color: var(--bg-secondary-color);
+  border-color: #adb5bd;
+}
+.settings-card.destructive {
+  border-color: #f5c6cb;
+  background-color: #fff5f5;
+}
+.destructive-button {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+.destructive-button:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.info-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9em;
   color: var(--text-secondary);
 }
-.theme-option.active {
-  background-color: var(--bg-color);
+.info-card a {
   color: var(--primary-color);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 500;
+  text-decoration: none;
+}
+.info-card a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {
-  .settings-container { margin: 0; box-shadow: none; border-radius: 0; height: auto; max-height: none; }
-  .settings-header { padding: 16px 20px; }
-  .settings-layout { flex-direction: column; }
+  .settings-page {
+    height: auto;
+    margin: 0;
+    min-width: 0; /* 👇 [핵심 수정] 모바일에서 최소 너비 제한을 해제합니다. */
+  }
+  .settings-page .manager-header {
+    padding: 16px 20px;
+  }
+  .settings-layout {
+    flex-direction: column;
+    padding: 0;
+  }
   .settings-nav {
     flex-basis: auto;
     width: 100%;
-    border-right: none;
     border-bottom: 1px solid var(--border-color);
     display: flex;
-    padding: 0; /* 내부 여백 제거 */
+    padding: 0 10px;
   }
   .settings-nav button {
     flex: 1;
     text-align: center;
-    border-radius: 0; /* 버튼의 둥근 모서리 제거 */
-    border-bottom: 2px solid transparent; /* 기본 상태의 하단 선 (투명) */
-    margin-bottom: -1px; /* 부모의 border와 겹치도록 처리 */
-    padding: 12px 8px;
-    background-color: transparent; /* 배경색 제거 */
+    border-radius: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    padding: 14px 8px;
+    font-size: 0.9em;
   }
   .settings-nav button.active {
-    background-color: transparent; /* 활성 상태 배경색 제거 */
+    background-color: transparent;
     color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color); /* 활성 상태 하단 선 (파란색) */
-    box-shadow: none; /* 그림자 제거 */
+    border-bottom-color: var(--primary-color);
   }
-  .settings-panel { padding: 20px; }
+  .settings-panel {
+    padding: 24px 20px;
+    padding-left: 20px; /* 👈 [수정] 데스크톱 전용 padding-left 초기화 */
+  }
+  .settings-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .settings-button {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
 }

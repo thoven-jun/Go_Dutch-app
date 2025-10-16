@@ -1,3 +1,5 @@
+// 제미나이용 백엔드/server.js
+
 const jsonServer = require('json-server');
 const server = jsonServer.create();
 const middlewares = jsonServer.defaults();
@@ -17,6 +19,83 @@ server.use(jsonServer.bodyParser);
 
 const readDb = () => JSON.parse(fs.readFileSync('db.json', 'UTF-8'));
 const writeDb = (data) => fs.writeFileSync('db.json', JSON.stringify(data, null, 2));
+
+// --- ▼▼▼▼▼ [수정] 선택적 데이터 가져오기 API 수정 ▼▼▼▼▼ ---
+server.post('/import/selective', (req, res) => {
+  const projectsToImport = req.body;
+  if (!Array.isArray(projectsToImport) || projectsToImport.length === 0) {
+    return res.status(400).jsonp({ error: '가져올 프로젝트 데이터가 없습니다.' });
+  }
+
+  const db = readDb();
+  
+  const allIds = [
+    ...db.projects.map(p => p.id),
+    ...db.projects.flatMap(p => p.participants?.map(pt => pt.id) || []),
+    ...db.projects.flatMap(p => p.expenses?.map(e => e.id) || [])
+  ].filter(id => id != null);
+  let maxId = Math.max(0, ...allIds);
+
+  const generateNewId = () => ++maxId;
+
+  projectsToImport.forEach(project => {
+    // --- 이름 중복 확인 및 새 이름 생성 로직 ---
+    let newName = project.name;
+    const existingNames = new Set(db.projects.map(p => p.name));
+    if (existingNames.has(newName)) {
+      let counter = 1;
+      let suffixedName = `${newName} (가져옴)`;
+      while (existingNames.has(suffixedName)) {
+        counter++;
+        suffixedName = `${newName} (가져옴 ${counter})`;
+      }
+      newName = suffixedName;
+    }
+    project.name = newName;
+    // --- 로직 종료 ---
+
+    const oldToNewParticipantIdMap = new Map();
+    
+    if (project.participants) {
+      project.participants.forEach(p => {
+        const oldId = p.id;
+        const newId = generateNewId();
+        p.id = newId;
+        oldToNewParticipantIdMap.set(oldId, newId);
+      });
+    }
+
+    if (project.expenses) {
+      project.expenses.forEach(e => {
+        e.id = generateNewId();
+        if (e.payer_id) {
+          e.payer_id = oldToNewParticipantIdMap.get(e.payer_id) || e.payer_id;
+        }
+        if (e.split_participants) {
+          e.split_participants = e.split_participants.map(id => oldToNewParticipantIdMap.get(id) || id);
+        }
+        if (e.split_details) {
+          const newDetails = {};
+          for (const oldId in e.split_details) {
+            const newId = oldToNewParticipantIdMap.get(parseInt(oldId));
+            if (newId) {
+              newDetails[newId] = e.split_details[oldId];
+            }
+          }
+          e.split_details = newDetails;
+        }
+      });
+    }
+
+    project.id = generateNewId();
+    db.projects.push(project);
+  });
+
+  writeDb(db);
+  res.status(200).jsonp({ message: '선택한 프로젝트를 성공적으로 가져왔습니다.' });
+});
+// --- ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲ ---
+
 
 // --- 사용자 정의 라우트 ---
 
@@ -691,6 +770,22 @@ server.patch('/expenses/:id', (req, res) => {
     res.status(404).jsonp({ error: "Expense not found" });
   }
 });
+
+server.post('/import', (req, res) => {
+  const data = req.body;
+  // 전달받은 데이터로 db.json 파일을 덮어씁니다.
+  writeDb(data);
+  res.status(200).jsonp({ message: 'Data imported successfully' });
+});
+
+// 👇 [추가] 앱 초기화를 위한 API
+server.post('/reset', (req, res) => {
+  // db.template.json 파일을 db.json으로 덮어씁니다.
+  fs.copyFileSync(dbTemplatePath, dbPath);
+  res.status(200).jsonp({ message: 'Data reset successfully' });
+});
+
+server.use(router);
 
 const port = process.env.PORT || 3001;
 server.listen(port, () => {
