@@ -1,3 +1,5 @@
+/* src/Settings.css */
+
 .settings-page {
   padding: 0;
   max-width: 800px;
@@ -132,7 +134,7 @@
   .settings-page {
     height: auto;
     margin: 0;
-    min-width: 0; /* 👇 [핵심 수정] 모바일에서 최소 너비 제한을 해제합니다. */
+    min-width: 0;
   }
   .settings-page .manager-header {
     padding: 16px 20px;
@@ -162,10 +164,11 @@
     color: var(--primary-color);
     border-bottom-color: var(--primary-color);
   }
-  .settings-panel {
+  /* --- ▼▼▼ [수정] 선택자를 .settings-page .settings-panel 로 변경 --- */
+  .settings-page .settings-panel {
     padding: 24px 20px;
-    padding-left: 20px; /* 👈 [수정] 데스크톱 전용 padding-left 초기화 */
   }
+  /* --- ▲▲▲ [수정] 완료 --- */
   .settings-card {
     flex-direction: column;
     align-items: flex-start;
