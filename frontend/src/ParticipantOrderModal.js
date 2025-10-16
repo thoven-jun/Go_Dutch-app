@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ParticipantOrderModal.css';
 
-function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl }) {
+function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl, authorizedFetch }) {
   const [participants, setParticipants] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   
@@ -22,7 +22,7 @@ function ParticipantOrderModal({ isOpen, onClose, project, onSave, apiBaseUrl })
 
   const handleSaveOrder = () => {
     const orderedParticipantIds = participants.map(p => p.id);
-    fetch(`${apiBaseUrl}/projects/${project.id}/participants/reorder`, {
+    authorizedFetch(`${apiBaseUrl}/projects/${project.id}/participants/reorder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderedParticipantIds })

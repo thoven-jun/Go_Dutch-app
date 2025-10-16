@@ -7,7 +7,7 @@ const LockIcon = ({ isLocked }) => ( <svg width="16" height="16" viewBox="0 0 24
 const formatNumber = (num) => { if (num === null || num === undefined || isNaN(num)) return ''; return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
 const unformatNumber = (str) => { if (typeof str !== 'string' || str.trim() === '') return 0; return Number(str.replace(/,/g, '')); };
 
-function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
+function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl, authorizedFetch }) {
   if (!project) return null;
 
   const [desc, setDesc] = useState('');
@@ -291,7 +291,7 @@ function AddExpenseModal({ isOpen, onClose, project, onUpdate, apiBaseUrl }) {
       lodgingEndDate: isLodgingCategory ? lodgingEndDate : null,
     };
 
-    fetch(`${apiBaseUrl}/projects/${project.id}/expenses`, {
+    authorizedFetch(`${apiBaseUrl}/projects/${project.id}/expenses`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(expenseData)

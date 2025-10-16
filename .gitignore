@@ -25,3 +25,6 @@ db.json
 
 # (선택) SQLite 데이터베이스도 제외
 database.sqlite
+
+#.env
+.env

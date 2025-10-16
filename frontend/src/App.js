@@ -1,7 +1,7 @@
-// src/App.js
+//* src/App.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Link, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Welcome from './Welcome';
 import ProjectDetailView from './ProjectDetailView';
@@ -18,12 +18,14 @@ import Settings from './Settings';
 import ParticipantOrderModal from './ParticipantOrderModal';
 import DestructiveActionModal from './DestructiveActionModal';
 import SelectiveImportModal from './SelectiveImportModal';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import './App.css';
 import './Modals.css';
 
 const MenuIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg> );
 
-function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants }) {
+function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDuplicateModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, participantListStates, onToggleParticipants, authorizedFetch }) {
   const { projectId } = useParams();
   const list = Array.isArray(projects) ? projects : Object.values(projects || {});
   const project = list.find(p => p.id === parseInt(projectId));
@@ -45,10 +47,11 @@ function ProjectDetailWrapper({ projects, onUpdate, onOpenRenameModal, onOpenDup
     apiBaseUrl={apiBaseUrl}
     isParticipantsExpanded={isExpanded}
     onToggleParticipants={() => onToggleParticipants(projectId)}
+    authorizedFetch={authorizedFetch}
   />;
 }
 
-function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal, closeAlert, openDestructiveModal, closeDestructiveModal }) {
+function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicateModal, apiBaseUrl, onOpenOrderModal, closeAlert, openDestructiveModal, closeDestructiveModal, authorizedFetch }) {
   return <ProjectSettings
     projects={projects}
     onUpdate={onUpdate}
@@ -59,6 +62,7 @@ function ProjectSettingsWrapper({ projects, onUpdate, showAlert, onOpenDuplicate
     apiBaseUrl={apiBaseUrl}
     onOpenOrderModal={onOpenOrderModal}
     closeAlert={closeAlert}
+    authorizedFetch={authorizedFetch}
   />;
 }
 
@@ -73,7 +77,15 @@ function ParticipantManagerWrapper({ projects, onUpdate, apiBaseUrl, onOpenOrder
     />;
 }
 
-function AppContent() {
+function ProtectedRoute({ isLoggedIn, children }) {
+  const location = useLocation();
+  if (!isLoggedIn) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return children;
+}
+
+function MainLayout({ onLogout }) {
   const apiBaseUrl = (process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}` : 'http://localhost:3001');
 
   const [projects, setProjects] = useState([]);
@@ -94,6 +106,32 @@ function AppContent() {
   const navigate = useNavigate();
 
   const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 768);
+  
+  const authorizedFetch = useCallback((url, options = {}) => {
+    const token = localStorage.getItem('accessToken');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers,
+    };
+    return fetch(url, { ...options, headers }).then(res => {
+      if (res.status === 401) {
+        onLogout();
+      }
+      return res;
+    });
+  }, [onLogout]);
+
+  const fetchProjects = useCallback(() => {
+    authorizedFetch(`${apiBaseUrl}/projects`)
+      .then(res => res.json())
+      .then(data => setProjects(data || []))
+      .catch(error => console.error("Error fetching projects:", error));
+  }, [apiBaseUrl, authorizedFetch]);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -127,11 +165,10 @@ function AppContent() {
   const closeDestructiveModal = () => {
     setDestructiveModalInfo({ isOpen: false, title: '', mainContent: '', consequences: [], confirmText: '', onConfirm: null });
   };
-// 👇 [추가] 선택적 가져오기 모달을 여는 함수
+
   const openImportModal = (projectsFromFile) => {
     setImportModalInfo({ isOpen: true, projects: projectsFromFile });
   };
-  // 👇 [추가] 선택적 가져오기 모달을 닫는 함수
   const closeImportModal = () => {
     setImportModalInfo({ isOpen: false, projects: [] });
   };
@@ -149,31 +186,11 @@ function AppContent() {
   const openCreateProjectModal = () => setIsCreateProjectModalOpen(true);
   const closeCreateProjectModal = () => setIsCreateProjectModalOpen(false);
 
-  const fetchProjects = useCallback(() => {
-    fetch(`${apiBaseUrl}/projects`)
-      .then(res => res.json())
-      .then(data => setProjects(data))
-      .catch(error => console.error("Error fetching projects:", error));
-  }, [apiBaseUrl]);
-
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
   const handleCreateProject = (projectData) => {
     let newProjectResponse;
-    fetch(`${apiBaseUrl}/projects`, {
+    authorizedFetch(`${apiBaseUrl}/projects`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            name: projectData.name,
-            type: projectData.type,
-            startDate: projectData.startDate,
-            endDate: projectData.endDate,
-            rounds: projectData.rounds, // 회차 정보 추가
-            participants: [],
-            expenses: []
-        })
+        body: JSON.stringify(projectData)
     })
     .then(res => res.json())
     .then(newProject => {
@@ -181,9 +198,8 @@ function AppContent() {
         const participantNames = projectData.participants;
         if (participantNames && participantNames.length > 0) {
             const addParticipantPromises = participantNames.map(name => {
-                return fetch(`${apiBaseUrl}/projects/${newProject.id}/participants`, {
+                return authorizedFetch(`${apiBaseUrl}/projects/${newProject.id}/participants`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name })
                 });
             });
@@ -200,9 +216,8 @@ function AppContent() {
   };
 
   const handleUpdateProject = (projectId, newName) => {
-    fetch(`${apiBaseUrl}/projects/${projectId}`, {
+    authorizedFetch(`${apiBaseUrl}/projects/${projectId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName })
     }).then(() => {
       fetchProjects();
@@ -212,7 +227,7 @@ function AppContent() {
 
   const handleDeleteProject = (projectId) => {
     showAlert('프로젝트 삭제', '정말 이 프로젝트를 삭제하시겠습니까?\n관련된 모든 참여자와 지출 내역이 함께 삭제됩니다.', () => {
-      fetch(`${apiBaseUrl}/projects/${projectId}`, {
+      authorizedFetch(`${apiBaseUrl}/projects/${projectId}`, {
         method: 'DELETE',
       }).then(res => {
         if (res.ok) {
@@ -244,9 +259,8 @@ function AppContent() {
     const updatePromises = duplicates.map(p => {
       const newName = updatedNames[p.id];
       if (p.name !== newName) {
-        return fetch(`${apiBaseUrl}/participants/${p.id}`, {
+        return authorizedFetch(`${apiBaseUrl}/participants/${p.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: newName }),
         });
       }
@@ -255,15 +269,13 @@ function AppContent() {
 
     let finalPromise;
     if (editingParticipantId) {
-      finalPromise = fetch(`${apiBaseUrl}/participants/${editingParticipantId}`, {
+      finalPromise = authorizedFetch(`${apiBaseUrl}/participants/${editingParticipantId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedNames['new'] }),
       });
     } else {
-      finalPromise = fetch(`${apiBaseUrl}/projects/${projectId}/participants`, {
+      finalPromise = authorizedFetch(`${apiBaseUrl}/projects/${projectId}/participants`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: updatedNames['new'] }),
       });
     }
@@ -278,10 +290,9 @@ function AppContent() {
     setDuplicateModalInfo({ isOpen: false, duplicates: [], newName: '', projectId: null, editingParticipantId: null });
   };
 
-  const handleUpdateExpense = (expenseId, updatedData, apiBaseUrl) => {
-    fetch(`${apiBaseUrl}/expenses/${expenseId}`, {
+  const handleUpdateExpense = (expenseId, updatedData) => {
+    authorizedFetch(`${apiBaseUrl}/expenses/${expenseId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedData)
     }).then(res => {
       if (!res.ok) throw new Error("Server response was not ok");
@@ -320,7 +331,7 @@ function AppContent() {
       '선택한 모든 프로젝트와 관련 데이터를 영구적으로 삭제하시겠습니까?',
       () => {
         const deletePromises = Array.from(selectedProjects).map(projectId =>
-          fetch(`${apiBaseUrl}/projects/${projectId}`, { method: 'DELETE' })
+          authorizedFetch(`${apiBaseUrl}/projects/${projectId}`, { method: 'DELETE' })
         );
 
         Promise.all(deletePromises)
@@ -349,7 +360,6 @@ function AppContent() {
       <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${isMobileSidebarOpen ? 'mobile-sidebar-open' : ''}`}>
         <Sidebar
           projects={projects}
-          onAddProject={handleCreateProject}
           onOpenRenameModal={handleOpenRenameModal}
           onDeleteProject={handleDeleteProject}
           isCollapsed={isSidebarCollapsed}
@@ -361,6 +371,7 @@ function AppContent() {
           onToggleSelectionMode={toggleSelectionMode}
           onProjectSelect={handleProjectSelect}
           onBulkDelete={handleBulkDelete}
+          onLogout={onLogout}
         />
 
         <main className="main-content">
@@ -368,16 +379,9 @@ function AppContent() {
             <button className="hamburger-menu" onClick={() => setIsMobileSidebarOpen(true)}>
               <MenuIcon />
             </button>
-            {isMobileView ? (
-              <div className="main-logo-link">
+            <Link to="/" className="main-logo-link">
                 <h1>Go Dutch</h1>
-              </div>
-            ) : (
-              <Link to="/" className="main-logo-link">
-                <h1>Go Dutch</h1>
-              </Link>
-            )}
-            
+            </Link>
           </header>
           <div className="content-area">
               <Routes>
@@ -396,6 +400,7 @@ function AppContent() {
                       participantListStates={participantListStates}
                       onToggleParticipants={handleToggleParticipants}
                       apiBaseUrl={apiBaseUrl}
+                      authorizedFetch={authorizedFetch}
                     />}
                   />
                   <Route
@@ -419,6 +424,7 @@ function AppContent() {
                       closeAlert={closeAlert}
                       openDestructiveModal={openDestructiveModal}
                       closeDestructiveModal={closeDestructiveModal}
+                      authorizedFetch={authorizedFetch}
                     />}
                   />
                   <Route 
@@ -430,11 +436,12 @@ function AppContent() {
                                 openDestructiveModal={openDestructiveModal}
                                 closeDestructiveModal={closeDestructiveModal}
                                 openImportModal={openImportModal}
+                                authorizedFetch={authorizedFetch}
                              />} 
                   />
                   <Route
                     path="/project/:projectId/settlement"
-                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} />}
+                    element={<SettlementResultView apiBaseUrl={apiBaseUrl} authorizedFetch={authorizedFetch} />}
                   />
                 </Routes>
           </div>
@@ -468,13 +475,14 @@ function AppContent() {
         project={addExpenseModalInfo.project}
         onUpdate={fetchProjects}
         apiBaseUrl={apiBaseUrl}
+        authorizedFetch={authorizedFetch}
       />
       <EditExpenseModal
         isOpen={editExpenseModalInfo.isOpen}
         onClose={closeEditExpenseModal}
         project={editExpenseModalInfo.project}
         expense={editExpenseModalInfo.expense}
-        onSave={(...args) => handleUpdateExpense(...args, apiBaseUrl)}
+        onSave={handleUpdateExpense}
         apiBaseUrl={apiBaseUrl}
       />
       <CreateProjectModal
@@ -488,16 +496,15 @@ function AppContent() {
         project={orderModalInfo.project}
         onSave={fetchProjects}
         apiBaseUrl={apiBaseUrl}
+        authorizedFetch={authorizedFetch}
       />
-      {/* ▼▼▼▼▼ [수정] onConfirmImport 로직 수정 ▼▼▼▼▼ */}
       <SelectiveImportModal 
         isOpen={importModalInfo.isOpen}
         onClose={closeImportModal}
         projects={importModalInfo.projects}
         onConfirmImport={(projectsToImport) => {
-          fetch(`${apiBaseUrl}/import/selective`, {
+          authorizedFetch(`${apiBaseUrl}/import/selective`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(projectsToImport)
           })
           .then(res => {
@@ -515,7 +522,6 @@ function AppContent() {
           });
         }}
       />
-      {/* ▲▲▲▲▲ [수정] 완료 ▲▲▲▲▲ */}
       <DestructiveActionModal
         isOpen={destructiveModalInfo.isOpen}
         onClose={closeDestructiveModal}
@@ -530,11 +536,38 @@ function AppContent() {
 }
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('accessToken'));
+  const apiBaseUrl = (process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}` : 'http://localhost:3001');
+
+  const handleLoginSuccess = (token) => {
+    localStorage.setItem('accessToken', token);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    setIsLoggedIn(false);
+  };
+  
+  return (
+    <Routes>
+      <Route path="/login" element={<Login apiBaseUrl={apiBaseUrl} onLoginSuccess={handleLoginSuccess} />} />
+      <Route path="/register" element={<Register apiBaseUrl={apiBaseUrl} onLoginSuccess={handleLoginSuccess} />} />
+      <Route path="/*" element={
+        <ProtectedRoute isLoggedIn={isLoggedIn}>
+          <MainLayout onLogout={handleLogout} />
+        </ProtectedRoute>
+      } />
+    </Routes>
+  );
+}
+
+function AppWrapper() {
   return (
     <Router>
-      <AppContent />
+      <App />
     </Router>
   );
 }
 
-export default App;
+export default AppWrapper;

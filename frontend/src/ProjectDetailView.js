@@ -88,7 +88,7 @@ const groupAndSortExpenses = (expenses, projectType, projectStartDate, projectRo
   return sortedGrouped;
 };
 
-function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl }) {
+function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, closeAlert, openAddExpenseModal, openEditExpenseModal, apiBaseUrl, authorizedFetch }) {
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState({});
@@ -110,24 +110,20 @@ function ProjectDetailView({ project, onUpdate, onOpenRenameModal, showAlert, cl
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
-    const menuWidth = 150; 
-    const margin = 16; // 화면 가장자리와의 최소 간격
-
-    let left = rect.right - menuWidth; // 기본적으로 메뉴 오른쪽 끝을 버튼 오른쪽 끝에 맞춤
-    const top = rect.bottom + 4;
-
-    // 만약 메뉴가 왼쪽 화면 밖으로 나간다면, 위치를 버튼의 왼쪽 끝에 맞춤 (오른쪽으로 펼쳐짐)
+    const menuWidth = 150;
+    const margin = 16;
+    let left = rect.right - menuWidth;
     if (left < margin) {
       left = rect.left;
     }
-
+    const top = rect.bottom + 4;
     setMenuStyle({ top: `${top}px`, left: `${left}px` });
     setIsMenuOpen(true);
   };
 
   const handleDeleteExpense = (expenseId) => {
     showAlert('지출 내역 삭제', '정말 이 지출 내역을 삭제하시겠습니까?', () => {
-      fetch(`${apiBaseUrl}/expenses/${expenseId}`, { method: 'DELETE' })
+      authorizedFetch(`${apiBaseUrl}/expenses/${expenseId}`, { method: 'DELETE' }) // fetch -> authorizedFetch
         .then(res => {
           if (!res.ok) throw new Error('Server response was not ok');
           onUpdate();

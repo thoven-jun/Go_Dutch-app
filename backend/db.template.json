@@ -1,4 +1,5 @@
 {
+  "users": [],
   "projects": [],
   "categories": [
     { "id": 1, "name": "식비", "emoji": "🍔" },
