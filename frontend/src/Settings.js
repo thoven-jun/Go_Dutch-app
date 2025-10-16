@@ -109,7 +109,7 @@ function Settings({ apiBaseUrl, showAlert, onUpdate, openDestructiveModal, close
           </button>
         </nav>
 
-        <main className="settings-panel">
+        <main className="global-settings-panel">
           {activeTab === 'data' && (
             <div className="settings-section">
               <h2>데이터 관리</h2>

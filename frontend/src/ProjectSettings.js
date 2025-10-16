@@ -1,3 +1,5 @@
+// src/ProjectSettings.js
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import './ProjectSettings.css';
@@ -433,7 +435,7 @@ function ProjectSettings({ projects, onUpdate, showAlert, openDestructiveModal, 
             <li><button className={activeTab === 'categories' ? 'active' : ''} onClick={() => setActiveTab('categories')}>카테고리 관리</button></li>
           </ul>
         </nav>
-        <div className="settings-panel">
+        <div className="project-settings-panel"> 
           {activeTab === 'general' && (
             <GeneralSettingsPanel project={project} apiBaseUrl={apiBaseUrl} onUpdate={onUpdate} showAlert={showAlert} />
           )}

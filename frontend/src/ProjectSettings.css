@@ -83,9 +83,9 @@
 }
 .settings-nav button:hover { background-color: var(--bg-secondary-color); }
 .settings-nav button.active { background-color: var(--accent-color-light); color: var(--primary-color); font-weight: 600; }
-.settings-panel { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; }
+.project-settings-panel { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; }
 .manager-section { display: flex; flex-direction: column; }
-.settings-panel > .manager-section { margin-top: 0; gap: 0; }
+.project-settings-panel > .manager-section { margin-top: 0; gap: 0; }
 .section-sticky-header { flex-shrink: 0; padding-bottom: 8px; }
 .section-sticky-footer {
   flex-shrink: 0; padding-top: 16px; border-top: 1px solid var(--border-color);
@@ -453,7 +453,7 @@
     gap: 0; 
     height: auto; 
   }
-  .settings-panel { height: auto; display: block; width: 100%; padding-left: 0; }
+  .project-settings-panel { height: auto; display: block; width: 100%; padding-left: 0; }
   .manager-section { height: auto; }
   .scrollable-list {
     padding-bottom: 0;
